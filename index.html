@@ -100,6 +100,10 @@ body.theme-moon     { --bg:#0c0a12;--bg2:#141020;--text:#ddd8e8;--text2:#9a90b8;
 .input-row textarea::placeholder { color:var(--text3); font-size:13px; }
 .send-btn { width:42px; height:42px; border-radius:50%; border:0.5px solid var(--border2); background:var(--bg2); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:16px; flex-shrink:0; transition:all 0.15s; }
 .send-btn:hover { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+.mic-btn { width:42px; height:42px; border-radius:50%; border:0.5px solid var(--border2); background:var(--bg2); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:18px; flex-shrink:0; transition:all 0.15s; }
+.mic-btn:hover { border-color:var(--accent); color:var(--accent); }
+.mic-btn.recording { background:rgba(220,60,60,0.15); border-color:#dc3c3c; color:#dc3c3c; animation:micPulse 1.5s ease-in-out infinite; }
+@keyframes micPulse { 0%,100%{opacity:0.7;transform:scale(1);}50%{opacity:1;transform:scale(1.08);} }
 .input-hint { font-size:10px; color:var(--text3); text-align:center; margin-top:8px; letter-spacing:0.05em; }
 
 /* ── SUMMARY ── */
@@ -205,6 +209,7 @@ body.theme-moon     { --bg:#0c0a12;--bg2:#141020;--text:#ddd8e8;--text2:#9a90b8;
   <div class="input-area">
     <div class="input-row">
       <textarea id="chatInput" rows="1" placeholder="지금 마음속에 있는 것을 편하게 말씀해 주세요..."></textarea>
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()" style="display:none;" title="음성 입력">🎙</button>
       <button class="send-btn" onclick="sendMsg()">↑</button>
     </div>
     <div class="input-hint" id="inputHint">Enter · 전송 &nbsp;|&nbsp; Shift+Enter · 줄바꿈</div>
@@ -605,6 +610,9 @@ async function sendMsg() {
   const ta=document.getElementById('chatInput');
   const text=ta.value.trim(); if(!text) return;
   ta.value=''; ta.style.height='auto';
+  // Stop speech recognition if active
+  if(isRecording) { isRecording=false; try{recognition.stop();}catch(e){} document.getElementById('micBtn').classList.remove('recording'); }
+  finalTranscript = '';
   appendUser(text); history.push({role:'user',content:text});
   showThinking(); isThinking=true;
   try {
@@ -688,6 +696,85 @@ function resetApp(){
 
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+
+// ── SPEECH RECOGNITION ──
+let recognition = null;
+let isRecording = false;
+let finalTranscript = '';
+
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return; // not supported
+
+  // Show mic button
+  document.getElementById('micBtn').style.display = 'flex';
+
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    for(let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if(e.results[i].isFinal) {
+        finalTranscript += t;
+      } else {
+        interim += t;
+      }
+    }
+    const ta = document.getElementById('chatInput');
+    ta.value = finalTranscript + interim;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+  };
+
+  recognition.onend = () => {
+    if(isRecording) {
+      // auto-restart if still recording
+      try { recognition.start(); } catch(e){}
+    } else {
+      document.getElementById('micBtn').classList.remove('recording');
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if(e.error !== 'no-speech' && e.error !== 'aborted') {
+      console.error('Speech error:', e.error);
+    }
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+  };
+}
+
+function toggleMic() {
+  if(!recognition) return;
+
+  if(isRecording) {
+    // Stop
+    isRecording = false;
+    recognition.stop();
+    document.getElementById('micBtn').classList.remove('recording');
+  } else {
+    // Start
+    isRecording = true;
+    recognition.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
+    // Keep existing text in textarea and append speech after it
+    finalTranscript = document.getElementById('chatInput').value;
+    try {
+      recognition.start();
+      document.getElementById('micBtn').classList.add('recording');
+    } catch(e){
+      isRecording = false;
+    }
+  }
+}
+
+// Init on load
+window.addEventListener('load', () => {
+  initSpeechRecognition();
+});
 
 // App ready
 
