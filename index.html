@@ -620,7 +620,7 @@ async function sendMsg() {
   try {
     const res=await fetch('/api/proxy',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:1000,system:lang==='ko'?SYSTEM_KO:SYSTEM_EN,messages:history})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514-20241022',max_tokens:1000,system:lang==='ko'?SYSTEM_KO:SYSTEM_EN,messages:history})
     });
     const data=await res.json();
     const raw=data.content.map(b=>b.text||'').join('');
@@ -671,7 +671,7 @@ async function endChat() {
   try {
     const res=await fetch('/api/proxy',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:600,system:lang==='ko'?SUM_KO:SUM_EN,messages:[{role:'user',content:convo}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514-20241022',max_tokens:600,system:lang==='ko'?SUM_KO:SUM_EN,messages:[{role:'user',content:convo}]})
     });
     const data=await res.json();
     const raw=data.content.map(b=>b.text||'').join('');
