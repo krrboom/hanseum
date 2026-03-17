@@ -139,29 +139,7 @@ body.theme-moon     { --bg:#0c0a12;--bg2:#141020;--text:#ddd8e8;--text2:#9a90b8;
 <button class="sound-btn" onclick="toggleSound()" id="soundBtn">🔊</button>
 <button class="mem-float" onclick="showMemory()" id="memFloat">남겨진 말 ↗</button>
 
-<!-- API KEY SCREEN -->
-<div id="apikey-screen" class="screen active" style="flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;background:#0d0c0a;">
-  <div style="font-family:'Noto Serif KR',serif;font-size:26px;font-weight:300;letter-spacing:0.3em;color:#d0cdc8;margin-bottom:6px;">한 숨</div>
-  <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:#5a5856;letter-spacing:0.3em;margin-bottom:2.5rem;">a long sigh</div>
-  <div style="width:36px;height:0.5px;background:rgba(255,255,255,0.1);margin:0 auto 2rem;"></div>
-  <div style="font-family:'Noto Serif KR',serif;font-size:14px;font-weight:300;color:#9a9890;line-height:2.2;max-width:300px;margin:0 auto 2rem;">
-    시작하기 전에<br>Anthropic API 키를 입력해주세요.<br>한 번만 입력하면 기억해드려요.
-  </div>
-  <div style="width:100%;max-width:320px;margin:0 auto;">
-    <input type="password" id="apikeyInput" placeholder="sk-ant-..." 
-      style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.15);padding:10px 0;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:#d0cdc8;text-align:center;outline:none;letter-spacing:0.05em;"
-      onkeydown="if(event.key==='Enter') submitApiKey()"
-    />
-    <div id="apikeyError" style="display:none;margin-top:8px;font-size:12px;color:#9a6060;">sk-ant- 로 시작하는 키를 입력해주세요</div>
-  </div>
-  <button onclick="submitApiKey()" 
-    style="margin-top:2rem;background:transparent;border:0.5px solid rgba(255,255,255,0.15);color:#9a9890;padding:12px 36px;font-family:'Noto Serif KR',serif;font-size:13px;font-weight:300;letter-spacing:0.15em;cursor:pointer;border-radius:100px;">
-    들어가기
-  </button>
-  <div style="margin-top:1.5rem;font-size:11px;color:#3a3836;line-height:1.8;">
-    키는 이 기기 브라우저에만 저장돼요<br>console.anthropic.com 에서 발급받을 수 있어요
-  </div>
-</div>
+<!-- API KEY SCREEN REMOVED - using server-side proxy -->
 
 <!-- THEME -->
 <div class="screen active" id="theme-screen">
@@ -326,79 +304,118 @@ const L = {
 };
 
 // ── AUDIO ──
-// Real audio files (rain, insects) use <audio> element with volume fade
+// Crossfade looping for MP3 (avoids gap at loop point)
 // Synthesized sounds (forest, ocean) use Web Audio API
-let currentAudio = null;
+let currentAudios = []; // array for crossfade pair
 let fadeTimer = null;
+let crossfadeTimer = null;
 let audioCtxSynth = null;
 
 function stopSound(soft=false) {
-  // Stop real audio
-  if(currentAudio) {
-    const a = currentAudio;
-    if(soft) {
-      let vol = a.volume;
-      clearInterval(fadeTimer);
-      fadeTimer = setInterval(()=>{
-        vol = Math.max(0, vol - 0.05);
-        a.volume = vol;
-        if(vol <= 0) { clearInterval(fadeTimer); a.pause(); a.currentTime=0; }
-      }, 80);
-    } else {
-      a.pause(); a.currentTime=0; a.volume=0;
-    }
-    currentAudio = null;
-  }
+  // Stop crossfade timer
+  if(crossfadeTimer) { clearInterval(crossfadeTimer); crossfadeTimer=null; }
+  // Stop real audio(s)
+  currentAudios.forEach(a => {
+    try {
+      if(soft) {
+        let vol = a.volume;
+        const ft = setInterval(()=>{
+          vol = Math.max(0, vol - 0.05);
+          try { a.volume = vol; } catch(e){}
+          if(vol <= 0) { clearInterval(ft); try{a.pause(); a.currentTime=0;}catch(e){} }
+        }, 80);
+      } else {
+        a.pause(); a.currentTime=0; a.volume=0;
+      }
+    } catch(e){}
+  });
+  currentAudios = [];
+  clearInterval(fadeTimer);
   // Stop synth nodes
   soundNodes.forEach(n=>{ try{ if(typeof n.stop==='function') n.stop(); }catch(e){} });
   soundNodes=[];
   if(audioCtxSynth) { try{ audioCtxSynth.close(); }catch(e){} audioCtxSynth=null; }
 }
 
-function fadeInAudio(audio, targetVol=0.85, duration=2500) {
-  audio.volume = 0;
-  audio.play().catch(()=>{});
-  const steps = 40;
-  const interval = duration / steps;
-  const step = targetVol / steps;
+// Crossfade loop: uses two Audio elements, overlapping at the end
+// to eliminate the MP3 gap/click on loop
+function playCrossfadeLoop(audioUrl, targetVol) {
+  let active = new Audio(audioUrl);
+  active.volume = 0;
+  currentAudios.push(active);
+  active.play().catch(()=>{});
+
+  // Fade in initial
   let cur = 0;
+  const fadeSteps = 40, fadeInterval = 2500/fadeSteps, fadeStep = targetVol/fadeSteps;
   clearInterval(fadeTimer);
   fadeTimer = setInterval(()=>{
-    cur = Math.min(targetVol, cur + step);
-    audio.volume = cur;
+    cur = Math.min(targetVol, cur + fadeStep);
+    try { active.volume = cur; } catch(e){}
     if(cur >= targetVol) clearInterval(fadeTimer);
-  }, interval);
+  }, fadeInterval);
+
+  // Crossfade overlap duration (seconds)
+  const XFADE = 2.0;
+
+  // Poll to detect near-end and crossfade to next copy
+  crossfadeTimer = setInterval(()=>{
+    if(!active || active.paused) return;
+    const remaining = active.duration - active.currentTime;
+    if(isNaN(remaining)) return;
+    if(remaining <= XFADE && remaining > 0) {
+      // Start next copy
+      const next = new Audio(audioUrl);
+      next.volume = 0;
+      currentAudios.push(next);
+      next.play().catch(()=>{});
+
+      const steps = 30;
+      const interval = (XFADE * 1000) / steps;
+      const volStep = targetVol / steps;
+      let frame = 0;
+      const xfTimer = setInterval(()=>{
+        frame++;
+        // Fade in next
+        try { next.volume = Math.min(targetVol, frame * volStep); } catch(e){}
+        // Fade out current
+        try { active.volume = Math.max(0, targetVol - frame * volStep); } catch(e){}
+        if(frame >= steps) {
+          clearInterval(xfTimer);
+          try { active.pause(); active.currentTime=0; } catch(e){}
+          // Remove old from array
+          const idx = currentAudios.indexOf(active);
+          if(idx > -1) currentAudios.splice(idx, 1);
+          active = next;
+        }
+      }, interval);
+    }
+  }, 200);
 }
 
 function playSound(type) {
   if(!soundOn) return;
   stopSound(false);
 
+  // Volume reduced 20% from original: rain 0.85→0.68, insects 0.75→0.60
   if(type==='rain') {
-    const audio = new Audio(AUDIO_RAIN);
-    audio.loop = true;
-    currentAudio = audio;
-    fadeInAudio(audio, 0.85, 2500);
+    playCrossfadeLoop(AUDIO_RAIN, 0.68);
     return;
   }
 
   if(type==='insects') {
-    const audio = new Audio(AUDIO_INSECTS);
-    audio.loop = true;
-    currentAudio = audio;
-    fadeInAudio(audio, 0.75, 2500);
+    playCrossfadeLoop(AUDIO_INSECTS, 0.60);
     return;
   }
 
-  // Synthesized sounds — Web Audio API
+  // Synthesized sounds — Web Audio API (volumes reduced 20%)
   audioCtxSynth = new (window.AudioContext||window.webkitAudioContext)();
   const ctx = audioCtxSynth;
   const master = ctx.createGain();
   master.gain.value = 0;
   master.connect(ctx.destination);
-  // Fade in master
   master.gain.setValueAtTime(0, ctx.currentTime);
-  master.gain.linearRampToValueAtTime(1, ctx.currentTime + 2.5);
+  master.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 2.5);
 
   if(type==='forest') {
     const buf=ctx.createBuffer(1,ctx.sampleRate*4,ctx.sampleRate);
@@ -406,14 +423,14 @@ function playSound(type) {
     for(let i=0;i<d.length;i++){last=last*0.995+(Math.random()*2-1)*0.005;d[i]=last*6;}
     const wind=ctx.createBufferSource(); wind.buffer=buf; wind.loop=true;
     const wf=ctx.createBiquadFilter(); wf.type='lowpass'; wf.frequency.value=350;
-    const wg=ctx.createGain(); wg.gain.value=0.35;
+    const wg=ctx.createGain(); wg.gain.value=0.28;
     wind.connect(wf); wf.connect(wg); wg.connect(master);
     wind.start(); soundNodes.push(wind);
     const buf2=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
     const d2=buf2.getChannelData(0); for(let i=0;i<d2.length;i++) d2[i]=(Math.random()*2-1);
     const rus=ctx.createBufferSource(); rus.buffer=buf2; rus.loop=true; rus.playbackRate.value=1.8;
     const rf=ctx.createBiquadFilter(); rf.type='bandpass'; rf.frequency.value=2800; rf.Q.value=1.5;
-    const rg=ctx.createGain(); rg.gain.value=0.07;
+    const rg=ctx.createGain(); rg.gain.value=0.056;
     rus.connect(rf); rf.connect(rg); rg.connect(master);
     rus.start(); soundNodes.push(rus);
     function bird(){
@@ -423,7 +440,7 @@ function playSound(type) {
       o.frequency.setValueAtTime(freq, ctx.currentTime);
       o.frequency.linearRampToValueAtTime(freq*0.85, ctx.currentTime+0.1);
       og.gain.setValueAtTime(0,ctx.currentTime);
-      og.gain.linearRampToValueAtTime(0.05,ctx.currentTime+0.03);
+      og.gain.linearRampToValueAtTime(0.04,ctx.currentTime+0.03);
       og.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.18);
       o.connect(og); og.connect(master);
       o.start(); o.stop(ctx.currentTime+0.2);
@@ -445,7 +462,7 @@ function playSound(type) {
       if(!audioCtxSynth) return;
       wg.gain.cancelScheduledValues(t);
       wg.gain.setValueAtTime(0.01,t);
-      wg.gain.linearRampToValueAtTime(0.5,t+2.8);
+      wg.gain.linearRampToValueAtTime(0.40,t+2.8);
       wg.gain.exponentialRampToValueAtTime(0.01,t+5.5);
       t+=5.5; setTimeout(wave,5200);
     }
@@ -455,7 +472,7 @@ function playSound(type) {
     for(let i=0;i<d2.length;i++){l2=l2*0.998+(Math.random()*2-1)*0.002;d2[i]=l2*5;}
     const deep=ctx.createBufferSource(); deep.buffer=buf2; deep.loop=true;
     const dlp=ctx.createBiquadFilter(); dlp.type='lowpass'; dlp.frequency.value=120;
-    const dg=ctx.createGain(); dg.gain.value=0.3;
+    const dg=ctx.createGain(); dg.gain.value=0.24;
     deep.connect(dlp); dlp.connect(dg); dg.connect(master);
     deep.start(); soundNodes.push(deep);
   }
@@ -468,34 +485,7 @@ function toggleSound() {
   else stopSound(true);
 }
 
-// ── API KEY ──
-const API_KEY_STORAGE = 'hanseum_api_key';
-
-function getApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE) || '';
-}
-
-function saveApiKey(key) {
-  localStorage.setItem(API_KEY_STORAGE, key.trim());
-}
-
-function showApiKeyScreen() {
-  document.getElementById('apikey-screen').classList.add('active');
-  document.querySelectorAll('.screen').forEach(s => {
-    if(s.id !== 'apikey-screen') s.classList.remove('active');
-  });
-}
-
-function submitApiKey() {
-  const val = document.getElementById('apikeyInput').value.trim();
-  if(!val.startsWith('sk-ant-')) {
-    document.getElementById('apikeyError').style.display = 'block';
-    return;
-  }
-  saveApiKey(val);
-  document.getElementById('apikey-screen').classList.remove('active');
-  showScreen('theme-screen');
-}
+// ── API KEY (server-side via /api/proxy) ──
 
 // ── MEMORY ──
 function loadMems() {
@@ -699,13 +689,7 @@ function resetApp(){
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 
-// Check API key on load
-window.addEventListener('load', () => {
-  if(getApiKey()) {
-    document.getElementById('apikey-screen').classList.remove('active');
-    document.getElementById('theme-screen').classList.add('active');
-  }
-});
+// App ready
 
 document.getElementById('chatInput').addEventListener('input',function(){
   this.style.height='auto';
