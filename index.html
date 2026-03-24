@@ -319,7 +319,6 @@ function b64toURL(b64) {
   const bin = atob(b64), buf = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
   return URL.createObjectURL(new Blob([buf], {type:"audio/mpeg"}));
-}));
 }
 const AUDIO_RAIN = "rain.mp3";
 const AUDIO_INSECTS = "insects.mp3";
