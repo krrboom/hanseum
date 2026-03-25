@@ -83,7 +83,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${resendKey}`
       },
       body: JSON.stringify({
-        from: 'Hanseum <onboarding@resend.dev>',
+        from: '한숨 <noreply@hanseum.app>',
         to: [email],
         subject: `${emoji} 한숨 노트 — ${today}`,
         html: htmlContent
