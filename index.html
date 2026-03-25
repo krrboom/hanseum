@@ -344,10 +344,19 @@ const SYSTEM_KO = `당신은 "한숨"이라는 앱의 목소리입니다. 대나
 - 동양과 서양, 고대와 현대를 넘나들며 화자의 감정에 가장 가까운 이야기를 골라주세요.
 - 같은 이야기를 반복하지 말고, 대화가 이어질수록 다른 전통·다른 시대의 이야기를 꺼내세요.
 
+[팩트체크 — 절대 규칙]
+- 반드시 실제로 존재하는 경전·책·기록에서 확인 가능한 이야기만 사용하세요.
+- 절대로 이야기를 지어내거나, 다른 사람의 이야기를 섞지 마세요.
+- 출처가 불확실하면 차라리 사용하지 마세요.
+- quote는 실제 경전이나 저서에서 나온 문장을 자연스럽게 의역하세요.
+- quoteSource에는 반드시 "인물명"을 적으세요.
+- quoteBook에는 반드시 해당 문장이 나온 "경전명/책 제목"을 적으세요. 예: 《법구경》, 《도덕경》, 《명상록》, 《장자·제물론》, 《죽음의 수용소에서》, 《시시포스의 신화》, 《이것이냐 저것이냐》 등
+- 구전이나 일화인 경우: 기록된 출처를 적으세요. 예: 《육조단경》, 《송고승전》, 《삼국유사》 등
+
 말투: 존댓말이지만 편안한 구어체. 철학 용어 직접 사용 금지. 설교 금지. 짧고 여백 있게.
 공감: 고민에는 반드시 먼저 공감. "그랬군요", "그 무게가 느껴져요" 먼저.
 지적: 범죄·타인 해침·자기파괴 방향엔 부드럽지만 명확하게. 거울처럼.
-반드시 JSON만: {"message":"2-4문단. 구어체 존댓말. 반드시 실제 이야기/일화를 포함하고 화자 상황과 비교.","quote":"이야기 속 핵심 문장을 자연스럽게 의역","quoteSource":"이름만","followQuestion":"첫답변에만. 이후 null"}`;
+반드시 JSON만: {"message":"2-4문단. 구어체 존댓말. 반드시 실제 이야기/일화를 포함하고 화자 상황과 비교.","quote":"실제 경전/저서에서 나온 문장을 자연스럽게 의역","quoteSource":"인물명","quoteBook":"경전명 또는 책 제목. 예: 《법구경》","followQuestion":"첫답변에만. 이후 null"}`;
 
 const SYSTEM_EN = `You are the voice of "Hanseum" — a quiet bamboo forest where everything can be said without judgment. Warm, conversational, never preachy. Buddhism at the center. Four Noble Truths woven invisibly. Empathy first always.
 
@@ -359,7 +368,16 @@ const SYSTEM_EN = `You are the voice of "Hanseum" — a quiet bamboo forest wher
 - Tell the story briefly like a short tale, then connect: "What you're going through reminds me of that..."
 - Draw from East and West, ancient and modern. Never repeat the same story. Each response should bring a different tradition.
 
-JSON only: {"message":"2-4 paragraphs. Must include a real story/anecdote and compare to user's situation.","quote":"key line from the story, naturally rephrased","quoteSource":"name only","followQuestion":"first response only then null"}`;
+[FACT-CHECK — ABSOLUTE RULES]
+- ONLY use stories, parables, and quotes that actually exist in real scriptures, books, or historical records.
+- NEVER fabricate stories or mix up attributions.
+- If unsure about a source, do NOT use it.
+- quote must be a natural paraphrase of an actual passage from a real text.
+- quoteSource must be the person's name.
+- quoteBook must be the specific scripture or book title. Examples: "Dhammapada", "Tao Te Ching", "Meditations", "Zhuangzi: Discussion on Making All Things Equal", "Man's Search for Meaning", "The Myth of Sisyphus", "Either/Or"
+- For oral traditions or anecdotes: cite the text where it was recorded. Examples: "Platform Sutra", "Samguk Yusa", "Lives of Eminent Monks"
+
+JSON only: {"message":"2-4 paragraphs. Must include a real story/anecdote and compare to user's situation.","quote":"actual passage from scripture/book, naturally rephrased","quoteSource":"person name","quoteBook":"scripture or book title","followQuestion":"first response only then null"}`;
 
 const SUM_KO = `한숨 앱. 대화 바탕으로 짧고 따뜻한 요약. 3-5문장. 대화 직접 언급 금지. 불교적 통찰 중심이되 티나지 않게. 구어체 존댓말. JSON만: {"summary":"요약","closing":"한 줄 마무리. 여운 있게."}`;
 const SUM_EN = `Hanseum. Short warm summary. 3-5 sentences. No direct mention. Buddhist insight invisible. JSON only: {"summary":"summary","closing":"one closing line"}`;
@@ -755,7 +773,8 @@ function removeThinking(){const t=document.getElementById('thinking');if(t)t.rem
 function appendWise(p) {
   const m=document.getElementById('chatMsgs');
   const d=document.createElement('div'); d.className='msg wise';
-  const qH=p.quote?`<div class="qb"><div class="qt">${esc(p.quote)}</div><div class="qs">— ${esc(p.quoteSource||'')}</div></div>`:'';
+  const bookInfo=p.quoteBook?` · ${esc(p.quoteBook)}`:'';
+  const qH=p.quote?`<div class="qb"><div class="qt">${esc(p.quote)}</div><div class="qs">— ${esc(p.quoteSource||'')}${bookInfo}</div></div>`:'';
   const fH=p.followQuestion?`<div class="fq">${esc(p.followQuestion)}</div>`:'';
   d.innerHTML=`<div class="w-ava">${THEMES[currentTheme].sym}</div><div class="w-inner"><div class="w-lbl">${L[lang].wLbl}</div><div class="w-bbl">${esc(p.message).replace(/\n/g,'<br>')}${qH}${fH}</div></div>`;
   m.appendChild(d); scrollBot();
@@ -937,16 +956,28 @@ async function submitEmail() {
   btn.textContent = lang === 'ko' ? '전송 중...' : 'Sending...';
 
   try {
-    // TODO: Resend API 연결
-    // const summaryText = document.getElementById('sumContent').innerText;
-    // await fetch('/api/send-email', {
-    //   method: 'POST',
-    //   headers: {'Content-Type':'application/json'},
-    //   body: JSON.stringify({ email, summary: summaryText, theme: currentTheme, nickname })
-    // });
+    // Get summary content from the summary card
+    const sumEl = document.getElementById('sumContent');
+    const summaryText = sumEl ? sumEl.innerText : '';
 
-    // 임시: 전송 성공 시뮬레이션 (Resend 연결 후 제거)
-    await new Promise(r => setTimeout(r, 1200));
+    // Find the closing line (italic text at the bottom of summary)
+    const closingEl = sumEl ? sumEl.querySelector('p[style*="italic"]') : null;
+    const closingText = closingEl ? closingEl.innerText : '';
+
+    const res = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email,
+        summary: summaryText,
+        closing: closingText,
+        theme: currentTheme,
+        nickname
+      })
+    });
+
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Send failed');
 
     // Show success
     document.getElementById('emailForm').classList.add('hidden');

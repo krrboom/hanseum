@@ -3,6 +3,10 @@
     "api/proxy.js": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/send-email.js": {
+      "memory": 128,
+      "maxDuration": 10
     }
   }
 }
