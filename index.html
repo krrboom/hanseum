@@ -67,25 +67,269 @@ body.theme-moon     { --bg:#0c0a12;--bg2:#141020;--text:#ddd8e8;--text2:#9a90b8;
 .mem-float { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--bg2); border:0.5px solid var(--border2); color:var(--text3); font-size:12px; padding:8px 16px; border-radius:100px; cursor:pointer; font-family:'Noto Serif KR',serif; letter-spacing:0.08em; transition:all 0.2s; z-index:50; display:none; }
 .mem-float:hover { color:var(--text); }
 
-/* ── CHAT ── */
+/* ── CHARACTER ANIMATIONS ── */
+@keyframes floatBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes headTurn {
+  0%, 70%, 100% { transform: scaleX(0.55); }
+  80%, 90% { transform: scaleX(1); }
+}
+@keyframes eyeBlink {
+  0%, 92%, 96%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.1); }
+}
+@keyframes umbrellaFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(1.5deg); }
+}
+@keyframes groundScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-300px); }
+}
+@keyframes bubbleIn {
+  from { opacity:0; transform: translateY(12px) scale(0.92); }
+  to { opacity:1; transform: translateY(0) scale(1); }
+}
+@keyframes envScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-1200px); }
+}
+@keyframes rainFall {
+  0% { transform: translateY(-100%); opacity:0; }
+  5% { opacity:0.4; }
+  95% { opacity:0.3; }
+  100% { transform: translateY(calc(100vh)); opacity:0; }
+}
+@keyframes cloudDrift {
+  0% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(calc(-25vw - 50px)) translateY(-3px); }
+  50% { transform: translateX(calc(-50vw - 100px)) translateY(1px); }
+  75% { transform: translateX(calc(-75vw - 150px)) translateY(-2px); }
+  100% { transform: translateX(calc(-100vw - 200px)) translateY(0); }
+}
+
+/* ── CHAT LAYOUT ── */
 #chat-screen { flex-direction:column; max-width:640px; margin:0 auto; width:100%; }
-.chat-hdr { padding:1.1rem 1.5rem; border-bottom:0.5px solid var(--border); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:var(--bg); z-index:10; }
+.chat-hdr { padding:1.1rem 1.5rem; border-bottom:0.5px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--bg); z-index:10; flex-shrink:0; }
 .chat-hdr-l { display:flex; align-items:center; gap:10px; }
 .h-sym { font-size:17px; opacity:0.6; }
 .h-title { font-family:'Noto Serif KR',serif; font-size:15px; font-weight:300; letter-spacing:0.2em; color:var(--text); }
 .h-nick { font-size:10px; color:var(--text3); letter-spacing:0.1em; margin-top:2px; }
 .end-btn { font-size:11px; color:var(--text3); cursor:pointer; background:none; border:0.5px solid var(--border); padding:5px 12px; border-radius:100px; font-family:'Noto Sans KR',sans-serif; letter-spacing:0.08em; transition:all 0.15s; }
 .end-btn:hover { color:var(--text2); border-color:var(--border2); }
-.chat-msgs { flex:1; overflow-y:auto; padding:2rem 1.5rem; display:flex; flex-direction:column; gap:1.5rem; }
-.msg { animation:fadeUp 0.4s ease forwards; }
-@keyframes fadeUp { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
-.msg.user { display:flex; justify-content:flex-end; }
-.msg.user .bbl { background:var(--bg2); border:0.5px solid var(--border); border-radius:18px 18px 4px 18px; padding:12px 16px; max-width:75%; font-size:14px; line-height:1.7; color:var(--text); }
-.msg.wise { display:flex; gap:12px; align-items:flex-start; }
-.w-ava { width:34px; height:34px; border-radius:50%; border:0.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; background:var(--bg); }
-.w-inner { flex:1; }
-.w-lbl { font-size:10px; color:var(--text3); letter-spacing:0.18em; margin-bottom:6px; }
-.w-bbl { background:var(--bg); border:0.5px solid var(--border); border-radius:4px 18px 18px 18px; padding:16px 20px; font-family:'Noto Serif KR',serif; font-size:14px; font-weight:300; line-height:2.1; color:var(--text); }
+
+.chat-body {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+}
+
+/* Environment layer (behind ground) */
+.walk-env {
+  position:absolute;
+  bottom:40px; left:0; right:0;
+  height:130px;
+  overflow:hidden;
+  z-index:1;
+  pointer-events:none;
+}
+.walk-env-scroll {
+  position:absolute;
+  bottom:0; left:0;
+  width:2400px;
+  height:100%;
+  animation: envScroll 25s linear infinite;
+}
+
+/* Ground strip */
+.walk-ground-strip {
+  position:absolute;
+  bottom:0; left:0; right:0;
+  height:40px;
+  background:var(--bg2);
+  border-top:1px solid var(--border2);
+  z-index:4;
+}
+.walk-ground-strip::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:8px;
+  background:linear-gradient(to bottom, var(--border), transparent);
+  opacity:0.15;
+}
+.walk-ground-path {
+  position:absolute;
+  bottom:10px; left:-300px;
+  width:calc(100% + 600px);
+  height:14px;
+  background:var(--border);
+  opacity:0.1;
+  border-radius:2px;
+  animation: groundScroll 8s linear infinite;
+}
+.walk-ground-dots {
+  position:absolute;
+  bottom:14px; left:-300px;
+  width:calc(100% + 600px);
+  height:16px;
+  animation: groundScroll 8s linear infinite;
+}
+.walk-ground-dots span {
+  position:absolute;
+  width:3px; height:2px;
+  border-radius:50%;
+  background:var(--border);
+}
+
+/* Character */
+.walk-char {
+  position:absolute;
+  bottom:30px;
+  left:16px;
+  z-index:5;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+  cursor:pointer;
+}
+/* Umbrella floats above character (rain only) */
+.walk-umbrella {
+  display:none;
+  position:absolute;
+  top:-34px; left:2px;
+  z-index:6;
+  animation: umbrellaFloat 3s ease-in-out infinite;
+}
+body.theme-rain .walk-umbrella { display:block; }
+
+/* Sigh puff (JS-created divs) */
+.sigh-puff {
+  position:absolute;
+  border-radius:50%;
+  background:rgba(200,195,220,0.45);
+  pointer-events:none;
+  z-index:6;
+  animation: puffRise 2s ease-out forwards;
+}
+@keyframes puffRise {
+  0% { opacity:0.5; transform: translate(0,0) scale(1); }
+  30% { opacity:0.4; }
+  100% { opacity:0; transform: translate(var(--dx), -30px) scale(1.8); }
+}
+
+/* Face turn: default=front, click=side (looking away) */
+.face-side, .face-front {
+  transition: opacity 1s ease;
+}
+.face-front { opacity:1; }
+.face-side { opacity:0; }
+.walk-char.looking .face-front { opacity:0; }
+.walk-char.looking .face-side { opacity:1; }
+
+/* Rain drops layer */
+.rain-layer {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  z-index:1;
+  pointer-events:none;
+}
+.rain-drop {
+  position:absolute;
+  top:-30px;
+  width:1.5px;
+  background:linear-gradient(to bottom, transparent, var(--accent));
+  opacity:0;
+  border-radius:0 0 1px 1px;
+  animation: rainFall linear infinite;
+}
+/* Moon layer */
+.moon-layer {
+  position:absolute;
+  top:0; left:0; right:0;
+  height:100%;
+  overflow:hidden;
+  z-index:0;
+  pointer-events:none;
+}
+.moon-crescent {
+  position:absolute;
+  top:6px; right:24px;
+  width:70px; height:70px;
+}
+.moon-crescent svg {
+  width:100%; height:100%;
+}
+/* Cloud uses SVG for natural shape */
+.moon-cloud-wrap {
+  position:absolute;
+  left:100%;
+  animation: cloudDrift linear infinite;
+  pointer-events:none;
+}
+
+/* Messages container */
+.chat-msgs {
+  position:absolute;
+  bottom:40px;
+  left:0; right:0;
+  top:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:1.5rem 1.2rem 115px 1.2rem;
+  gap:1rem;
+  overflow-y:auto;
+  z-index:3;
+  scrollbar-width:none;
+}
+.chat-msgs::-webkit-scrollbar { display:none; }
+
+/* Message bubbles */
+.msg { animation: bubbleIn 0.5s ease forwards; }
+.msg.user { display:flex; justify-content:flex-end; padding-left:20%; }
+.msg.user .bbl {
+  background:rgba(255,255,255,0.04);
+  border:0.5px solid var(--border);
+  border-radius:20px 20px 6px 20px;
+  padding:12px 18px;
+  max-width:100%;
+  font-size:14px; line-height:1.7;
+  color:var(--text);
+  backdrop-filter:blur(4px);
+}
+/* AI message */
+.msg.wise { display:flex; flex-direction:column; align-items:flex-start; padding-right:10%; }
+.w-ava { display:none; }
+.w-inner { flex:1; position:relative; }
+.w-lbl { font-size:10px; color:var(--text3); letter-spacing:0.18em; margin-bottom:6px; margin-left:4px; }
+.w-bbl {
+  background:rgba(255,255,255,0.035);
+  border:0.5px solid var(--border);
+  border-radius:6px 20px 20px 20px;
+  padding:16px 20px;
+  font-family:'Noto Serif KR',serif;
+  font-size:14px; font-weight:300;
+  line-height:2.1;
+  color:var(--text);
+  backdrop-filter:blur(4px);
+  position:relative;
+}
+.w-bbl::before {
+  content:'';
+  position:absolute;
+  bottom:-6px; left:18px;
+  width:12px; height:12px;
+  background:rgba(255,255,255,0.035);
+  border:0.5px solid var(--border);
+  border-top:none; border-right:none;
+  transform:rotate(-45deg);
+  clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
+}
+
 .w-bbl .qb { margin:12px 0 4px; border-left:1.5px solid var(--border2); padding-left:14px; }
 .w-bbl .qt { font-size:13px; color:var(--text2); font-style:italic; line-height:1.8; }
 .w-bbl .qs { font-size:11px; color:var(--text3); margin-top:3px; font-family:'Noto Sans KR',sans-serif; font-style:normal; }
@@ -94,7 +338,7 @@ body.theme-moon     { --bg:#0c0a12;--bg2:#141020;--text:#ddd8e8;--text2:#9a90b8;
 .dot { width:5px; height:5px; border-radius:50%; background:var(--text3); animation:pulse 1.3s ease infinite; }
 .dot:nth-child(2){animation-delay:0.2s;}.dot:nth-child(3){animation-delay:0.4s;}
 @keyframes pulse{0%,80%,100%{opacity:0.3;transform:scale(0.8);}40%{opacity:1;transform:scale(1);}}
-.input-area { padding:1rem 1.5rem 1.5rem; border-top:0.5px solid var(--border); background:var(--bg); position:sticky; bottom:0; }
+.input-area { padding:1rem 1.5rem 1.5rem; border-top:0.5px solid var(--border); background:var(--bg); flex-shrink:0; }
 .input-row { display:flex; gap:10px; align-items:flex-end; }
 .input-row textarea { flex:1; background:var(--bg2); border:0.5px solid var(--border2); border-radius:20px; padding:12px 16px; font-family:'Noto Sans KR',sans-serif; font-size:16px; line-height:1.6; resize:none; min-height:46px; max-height:140px; color:var(--text); outline:none; }
 .input-row textarea::placeholder { color:var(--text3); font-size:13px; }
@@ -250,7 +494,80 @@ body.theme-moon     { --bg:#0c0a12;--bg2:#141020;--text:#ddd8e8;--text2:#9a90b8;
     </div>
     <button class="end-btn" id="endBtn" onclick="endChat()">대화 마치기</button>
   </div>
-  <div class="chat-msgs" id="chatMsgs"></div>
+  <div class="chat-body">
+    <!-- Moon layer (moon theme) -->
+    <div class="moon-layer" id="moonLayer"></div>
+    <!-- Rain layer -->
+    <div class="rain-layer" id="rainLayer"></div>
+    <!-- Messages -->
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <!-- Environment (trees/waves/etc) -->
+    <div class="walk-env" id="walkEnv"><div class="walk-env-scroll" id="walkEnvScroll"></div></div>
+    <!-- Character: 한숨이 (original design, click to turn) -->
+    <div class="walk-char" id="walkChar" onclick="toggleLook()">
+      <!-- Umbrella (rain only) -->
+      <div class="walk-umbrella">
+        <svg width="52" height="30" viewBox="0 0 52 30">
+          <path d="M2 24 Q26 -2 50 24" fill="var(--accent)" opacity="0.25"/>
+          <path d="M2 24 Q26 -2 50 24" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.4"/>
+          <path d="M2 24 Q9 28 16 24 Q23 28 26 24 Q29 28 36 24 Q43 28 50 24" fill="none" stroke="var(--accent)" stroke-width="0.7" opacity="0.3"/>
+          <line x1="26" y1="5" x2="26" y2="30" stroke="var(--accent)" stroke-width="1" opacity="0.3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <svg width="64" height="72" viewBox="-90 85 180 175" style="overflow:visible;">
+        <g style="animation:floatBob 2.8s ease-in-out infinite;">
+          <!-- Ambient glow -->
+          <ellipse cx="0" cy="180" rx="100" ry="90" fill="rgba(210,210,228,0.08)"/>
+          <!-- Outer misty aura -->
+          <ellipse cx="0" cy="175" rx="80" ry="68" fill="rgba(200,200,220,0.12)"/>
+          <!-- Main cloud body -->
+          <ellipse cx="0" cy="180" rx="68" ry="58" fill="rgba(225,220,235,0.55)"/>
+          <!-- Cloud bumps (upper half only) -->
+          <ellipse cx="-28" cy="168" rx="30" ry="28" fill="rgba(235,230,242,0.6)"/>
+          <ellipse cx="28" cy="164" rx="28" ry="26" fill="rgba(235,230,242,0.6)"/>
+          <ellipse cx="0" cy="155" rx="40" ry="32" fill="rgba(240,236,248,0.65)"/>
+          <ellipse cx="-18" cy="148" rx="22" ry="18" fill="rgba(242,238,250,0.5)"/>
+          <ellipse cx="20" cy="145" rx="20" ry="16" fill="rgba(242,238,250,0.5)"/>
+          <!-- Tiny legs -->
+          <rect x="-18" y="232" width="14" height="18" rx="7" fill="rgba(210,205,225,0.5)"/>
+          <rect x="4" y="232" width="14" height="18" rx="7" fill="rgba(210,205,225,0.5)"/>
+
+          <!-- FRONT FACE (default) -->
+          <g class="face-front">
+            <!-- Eyes -->
+            <g style="animation:eyeBlink 6s ease-in-out infinite;">
+              <ellipse cx="-18" cy="174" rx="7" ry="9" fill="rgba(120,115,150,0.5)"/>
+              <ellipse cx="-18" cy="172" rx="3.5" ry="4.5" fill="rgba(255,255,255,0.5)"/>
+            </g>
+            <g style="animation:eyeBlink 6s ease-in-out infinite 0.1s;">
+              <ellipse cx="18" cy="174" rx="7" ry="9" fill="rgba(120,115,150,0.5)"/>
+              <ellipse cx="18" cy="172" rx="3.5" ry="4.5" fill="rgba(255,255,255,0.5)"/>
+            </g>
+            <!-- Blush -->
+            <ellipse cx="-28" cy="186" rx="8" ry="4" fill="rgba(210,170,180,0.25)"/>
+            <ellipse cx="28" cy="186" rx="8" ry="4" fill="rgba(210,170,180,0.25)"/>
+            <!-- Mouth -->
+            <ellipse cx="0" cy="196" rx="6" ry="4.5" fill="rgba(120,115,150,0.2)"/>
+          </g>
+
+          <!-- SIDE FACE (on click) -->
+          <g class="face-side">
+            <ellipse cx="16" cy="174" rx="7" ry="9" fill="rgba(120,115,150,0.5)"/>
+            <ellipse cx="16" cy="172" rx="3.5" ry="4.5" fill="rgba(255,255,255,0.5)"/>
+            <ellipse cx="-6" cy="175" rx="3.5" ry="5" fill="rgba(120,115,150,0.18)"/>
+            <ellipse cx="28" cy="186" rx="8" ry="4" fill="rgba(210,170,180,0.25)"/>
+            <ellipse cx="20" cy="196" rx="5" ry="3.5" fill="rgba(120,115,150,0.18)"/>
+          </g>
+
+        </g>
+      </svg>
+    </div>
+    <!-- Ground strip -->
+    <div class="walk-ground-strip">
+      <div class="walk-ground-path"></div>
+      <div class="walk-ground-dots" id="groundDots"></div>
+    </div>
+  </div>
   <div class="input-area">
     <div class="input-row">
       <textarea id="chatInput" rows="1" placeholder="지금 마음속에 있는 것을 편하게 말씀해 주세요..."></textarea>
@@ -585,16 +902,30 @@ function playSound(type) {
     const wg=ctx.createGain(); wg.gain.value=0;
     src.connect(lp); lp.connect(wg); wg.connect(master);
     src.start(); soundNodes.push(src);
+    // Second wave layer (offset) for overlap
+    const src2=ctx.createBufferSource(); src2.buffer=buf; src2.loop=true;
+    const lp2=ctx.createBiquadFilter(); lp2.type='lowpass'; lp2.frequency.value=500;
+    const wg2=ctx.createGain(); wg2.gain.value=0;
+    src2.connect(lp2); lp2.connect(wg2); wg2.connect(master);
+    src2.start(); soundNodes.push(src2);
     let t=ctx.currentTime;
     function wave(){
       if(!audioCtxSynth) return;
+      // Wave 1
       wg.gain.cancelScheduledValues(t);
-      wg.gain.setValueAtTime(0.01,t);
-      wg.gain.linearRampToValueAtTime(0.40,t+2.8);
-      wg.gain.exponentialRampToValueAtTime(0.01,t+5.5);
-      t+=5.5; setTimeout(wave,5200);
+      wg.gain.setValueAtTime(0.08,t);
+      wg.gain.linearRampToValueAtTime(0.35,t+3);
+      wg.gain.linearRampToValueAtTime(0.08,t+6);
+      // Wave 2 (offset by 3s, fills the gap)
+      wg2.gain.cancelScheduledValues(t);
+      wg2.gain.setValueAtTime(0.06,t);
+      wg2.gain.linearRampToValueAtTime(0.06,t+2.5);
+      wg2.gain.linearRampToValueAtTime(0.25,t+5);
+      wg2.gain.linearRampToValueAtTime(0.06,t+7);
+      t+=6; setTimeout(wave,5800);
     }
     wave();
+    // Deep rumble layer (continuous)
     const buf2=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);
     const d2=buf2.getChannelData(0); let l2=0;
     for(let i=0;i<d2.length;i++){l2=l2*0.998+(Math.random()*2-1)*0.002;d2[i]=l2*5;}
@@ -717,6 +1048,8 @@ function startChat() {
   document.getElementById('inputHint').innerHTML=L[lang].inputHint;
   showScreen('chat-screen');
   history=[]; document.getElementById('chatMsgs').innerHTML='';
+  initWalkScene();
+  startSighPuffs();
   appendWise({message:L[lang].greeting(nickname,currentTheme),quote:null,quoteSource:null,followQuestion:null});
 }
 
@@ -761,7 +1094,7 @@ function appendUser(text) {
   const m=document.getElementById('chatMsgs');
   const d=document.createElement('div'); d.className='msg user';
   d.innerHTML=`<div class="bbl">${esc(text)}</div>`;
-  m.appendChild(d); scrollBot();
+  m.appendChild(d); scrollBot(); updateWalkScene();
 }
 function showThinking() {
   const m=document.getElementById('chatMsgs');
@@ -777,12 +1110,22 @@ function appendWise(p) {
   const qH=p.quote?`<div class="qb"><div class="qt">${esc(p.quote)}</div><div class="qs">— ${esc(p.quoteSource||'')}${bookInfo}</div></div>`:'';
   const fH=p.followQuestion?`<div class="fq">${esc(p.followQuestion)}</div>`:'';
   d.innerHTML=`<div class="w-ava">${THEMES[currentTheme].sym}</div><div class="w-inner"><div class="w-lbl">${L[lang].wLbl}</div><div class="w-bbl">${esc(p.message).replace(/\n/g,'<br>')}${qH}${fH}</div></div>`;
-  m.appendChild(d); scrollBot();
+  m.appendChild(d); scrollBot(); updateWalkScene();
 }
-function scrollBot(){const m=document.getElementById('chatMsgs');m.scrollTop=m.scrollHeight;}
+function scrollBot(){
+  const m=document.getElementById('chatMsgs');
+  requestAnimationFrame(()=>{
+    m.scrollTo({ top: m.scrollHeight, behavior: 'smooth' });
+  });
+}
+
+function fadeOldMessages() {
+  // No longer needed - messages stay visible and scrollable
+}
 
 async function endChat() {
   stopSound(true);
+  stopSighPuffs();
   if(history.length<2){resetApp();return;}
   const l=L[lang]; const t=THEMES[currentTheme];
   document.getElementById('sumTitle').textContent=l.sumTitle;
@@ -815,6 +1158,7 @@ async function endChat() {
 function resetApp(){
   history=[];
   emailSent=false;
+  stopSighPuffs();
   const l=L[lang];
   const saveBtn=document.getElementById('saveBtn');
   saveBtn.innerHTML=`<span class="save-icon">📨</span><span id="saveBtnText">${l.saveBtn}</span>`;
@@ -1001,7 +1345,209 @@ async function submitEmail() {
 // Init on load
 window.addEventListener('load', () => {
   initSpeechRecognition();
+  initWalkScene();
 });
+
+function initWalkScene() {
+  const dotsEl = document.getElementById('groundDots');
+  if(!dotsEl) return;
+  let html = '';
+  for(let i = 0; i < 50; i++) {
+    const left = (i * 4) + '%';
+    const bottom = (2 + Math.sin(i * 2.3) * 3) + 'px';
+    const w = 2 + (i % 3) * 1.5;
+    html += `<span style="left:${left};bottom:${bottom};width:${w}px;height:2px;"></span>`;
+  }
+  dotsEl.innerHTML = html;
+  initEnvironment();
+}
+
+function initEnvironment() {
+  const envScroll = document.getElementById('walkEnvScroll');
+  const rainLayer = document.getElementById('rainLayer');
+  const moonLayer = document.getElementById('moonLayer');
+  if(!envScroll) return;
+
+  envScroll.innerHTML = '';
+  rainLayer.innerHTML = '';
+  moonLayer.innerHTML = '';
+
+  if(currentTheme === 'forest') {
+    // Cute big trees and bushes
+    let svg = '<svg width="2400" height="130" style="position:absolute;bottom:0;">';
+    for(let i = 0; i < 14; i++) {
+      const x = i * 175 + Math.floor(Math.random() * 50);
+      const isBush = Math.random() > 0.6;
+      if(isBush) {
+        // Cute round bush
+        const w = 28 + Math.floor(Math.random() * 16);
+        const h = 22 + Math.floor(Math.random() * 12);
+        const g = 55 + Math.floor(Math.random() * 25);
+        svg += `<ellipse cx="${x}" cy="${130 - h/2 + 2}" rx="${w}" ry="${h}" fill="rgba(30,${g},32,0.55)"/>`;
+        svg += `<ellipse cx="${x - 6}" cy="${130 - h/2 - 4}" rx="${w*0.6}" ry="${h*0.65}" fill="rgba(38,${g+10},38,0.45)"/>`;
+        svg += `<ellipse cx="${x + 8}" cy="${130 - h/2 - 2}" rx="${w*0.5}" ry="${h*0.55}" fill="rgba(35,${g+5},35,0.4)"/>`;
+      } else {
+        // Cute round tree (like character's style - simple shapes)
+        const h = 80 + Math.floor(Math.random() * 50);
+        const canopyR = 22 + Math.floor(Math.random() * 16);
+        const g = 50 + Math.floor(Math.random() * 30);
+        // Trunk
+        svg += `<rect x="${x - 4}" y="${130 - h * 0.45}" width="8" height="${h * 0.45}" rx="4" fill="rgba(60,42,30,0.55)"/>`;
+        // Main canopy (big circle)
+        svg += `<circle cx="${x}" cy="${130 - h * 0.45 - canopyR + 6}" r="${canopyR}" fill="rgba(28,${g},30,0.55)"/>`;
+        // Top bump
+        svg += `<circle cx="${x - 5}" cy="${130 - h * 0.45 - canopyR - 4}" r="${canopyR * 0.6}" fill="rgba(32,${g+8},35,0.45)"/>`;
+        svg += `<circle cx="${x + 7}" cy="${130 - h * 0.45 - canopyR + 2}" r="${canopyR * 0.5}" fill="rgba(35,${g+5},38,0.4)"/>`;
+      }
+    }
+    svg += '</svg>';
+    envScroll.innerHTML = svg;
+    envScroll.style.animation = 'envScroll 30s linear infinite';
+
+  } else if(currentTheme === 'ocean') {
+    // Waves - only in the environment layer ABOVE ground, not covering character
+    let svg = '<svg width="2400" height="130" style="position:absolute;bottom:0;">';
+    for(let layer = 0; layer < 5; layer++) {
+      const y = 90 + layer * 10;
+      let d = `M0 ${y}`;
+      for(let x = 0; x <= 2400; x += 25) {
+        const wy = y + Math.sin(x * 0.018 + layer * 1.8) * (4 - layer * 0.5) + Math.sin(x * 0.007) * 2;
+        d += ` L${x} ${wy}`;
+      }
+      d += ' L2400 130 L0 130 Z';
+      const alpha = 0.12 + layer * 0.06;
+      svg += `<path d="${d}" fill="rgba(20,${45+layer*18},${75+layer*22},${alpha})"/>`;
+    }
+    // Foam dots
+    for(let i = 0; i < 20; i++) {
+      const x = i * 120 + Math.random() * 60;
+      svg += `<ellipse cx="${x}" cy="${92 + Math.random()*6}" rx="${3+Math.random()*4}" ry="1.5" fill="rgba(200,220,255,0.08)"/>`;
+    }
+    svg += '</svg>';
+    envScroll.innerHTML = svg;
+    envScroll.style.animation = 'envScroll 20s linear infinite';
+
+  } else if(currentTheme === 'rain') {
+    // Rain drops - start from above, invisible at top
+    let html = '';
+    for(let i = 0; i < 50; i++) {
+      const left = Math.random() * 100;
+      const delay = Math.random() * 5;
+      const dur = 2.0 + Math.random() * 2.0;
+      const h = 10 + Math.random() * 14;
+      html += `<div class="rain-drop" style="left:${left}%;height:${h}px;animation-duration:${dur}s;animation-delay:${delay}s;"></div>`;
+    }
+    rainLayer.innerHTML = html;
+    // Puddles scrolling on ground env
+    let svg = '<svg width="2400" height="130" style="position:absolute;bottom:0;">';
+    for(let i = 0; i < 14; i++) {
+      const x = i * 175 + Math.floor(Math.random() * 80);
+      svg += `<ellipse cx="${x}" cy="${120}" rx="${14+Math.floor(Math.random()*12)}" ry="3" fill="rgba(160,180,255,0.06)"/>`;
+    }
+    svg += '</svg>';
+    envScroll.innerHTML = svg;
+    envScroll.style.animation = 'envScroll 22s linear infinite';
+
+  } else if(currentTheme === 'moon') {
+    let mhtml = '';
+    // Moon glow layers (bigger, brighter)
+    mhtml += '<div style="position:absolute;top:-10px;right:10px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,200,0.06) 0%,rgba(255,255,200,0.02) 40%,transparent 65%);pointer-events:none;"></div>';
+    // SVG crescent moon - proper crescent with glow
+    mhtml += `<div class="moon-crescent"><svg width="60" height="60" viewBox="0 0 60 60">
+      <defs><radialGradient id="moonGlow"><stop offset="0%" stop-color="rgba(255,255,215,0.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs>
+      <circle cx="30" cy="30" r="28" fill="url(#moonGlow)"/>
+      <circle cx="30" cy="30" r="20" fill="rgba(255,255,215,0.35)"/>
+      <circle cx="37" cy="25" r="16" fill="var(--bg)"/>
+    </svg></div>`;
+
+    // SVG clouds with natural shape - use NEGATIVE delay to distribute
+    function makeCloud(w, h) {
+      const fill = 'rgba(255,255,255,0.05)';
+      let s = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+      const cx = w/2, cy = h/2;
+      s += `<ellipse cx="${cx}" cy="${cy+2}" rx="${w*0.4}" ry="${h*0.38}" fill="${fill}"/>`;
+      s += `<ellipse cx="${cx-w*0.2}" cy="${cy+1}" rx="${w*0.24}" ry="${h*0.32}" fill="${fill}"/>`;
+      s += `<ellipse cx="${cx+w*0.22}" cy="${cy+2}" rx="${w*0.22}" ry="${h*0.3}" fill="${fill}"/>`;
+      s += `<ellipse cx="${cx-w*0.06}" cy="${cy-h*0.12}" rx="${w*0.2}" ry="${h*0.3}" fill="${fill}"/>`;
+      s += `<ellipse cx="${cx+w*0.14}" cy="${cy-h*0.08}" rx="${w*0.16}" ry="${h*0.26}" fill="${fill}"/>`;
+      s += '</svg>';
+      return s;
+    }
+
+    const clouds = [
+      { top: 25, w: 130, h: 42, dur: 50, delay: -10 },
+      { top: 70, w: 100, h: 34, dur: 60, delay: -35 },
+      { top: 12, w: 110, h: 38, dur: 55, delay: -20 },
+      { top: 100, w: 150, h: 46, dur: 45, delay: -5 },
+      { top: 50, w: 90, h: 30, dur: 65, delay: -45 },
+      { top: 130, w: 120, h: 40, dur: 52, delay: -28 },
+    ];
+    clouds.forEach(c => {
+      mhtml += `<div class="moon-cloud-wrap" style="top:${c.top}px;animation-duration:${c.dur}s;animation-delay:${c.delay}s;">${makeCloud(c.w, c.h)}</div>`;
+    });
+
+    moonLayer.innerHTML = mhtml;
+
+    // Distant tree silhouettes
+    let svg = '<svg width="2400" height="130" style="position:absolute;bottom:0;">';
+    for(let i = 0; i < 12; i++) {
+      const x = i * 200 + Math.floor(Math.random() * 80);
+      const h = 40 + Math.floor(Math.random() * 50);
+      svg += `<ellipse cx="${x}" cy="${130 - h*0.3}" rx="16" ry="${h*0.55}" fill="rgba(12,12,22,0.35)"/>`;
+    }
+    svg += '</svg>';
+    envScroll.innerHTML = svg;
+    envScroll.style.animation = 'envScroll 35s linear infinite';
+  }
+}
+
+function updateWalkScene() {
+  // Environment is now auto-animated
+}
+
+let lookTimer = null;
+function toggleLook() {
+  const c = document.getElementById('walkChar');
+  if(!c) return;
+  const isLooking = c.classList.contains('looking');
+  if(isLooking) {
+    c.classList.remove('looking');
+    clearTimeout(lookTimer);
+  } else {
+    c.classList.add('looking');
+    clearTimeout(lookTimer);
+    lookTimer = setTimeout(() => c.classList.remove('looking'), 3000);
+  }
+}
+
+let sighInterval = null;
+function startSighPuffs() {
+  if(sighInterval) return;
+  doSigh();
+  sighInterval = setInterval(doSigh, 7000);
+}
+function stopSighPuffs() {
+  clearInterval(sighInterval);
+  sighInterval = null;
+}
+function doSigh() {
+  const c = document.getElementById('walkChar');
+  if(!c) return;
+  const sizes = [{w:6,h:5,delay:0},{w:5,h:4,delay:200},{w:4,h:3,delay:400}];
+  sizes.forEach(s => {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'sigh-puff';
+      p.style.width = s.w+'px';
+      p.style.height = s.h+'px';
+      p.style.bottom = '38px';
+      p.style.left = (24 + Math.random()*10) + 'px';
+      p.style.setProperty('--dx', (Math.random()*10-5)+'px');
+      c.appendChild(p);
+      setTimeout(() => p.remove(), 2100);
+    }, s.delay);
+  });
+}
 
 // App ready
 
