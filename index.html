@@ -106,7 +106,7 @@
   #tin button{padding:0 14px;font-size:13px;letter-spacing:.2em}
   #tin button:disabled{opacity:.4;cursor:default}
   #talkbtn{position:absolute;left:50%;bottom:160px;transform:translateX(-50%);pointer-events:auto;font-size:12px;letter-spacing:.2em;padding:3px 12px 3px 30px;background-image:url(art/ic_talk.png);background-repeat:no-repeat;background-position:8px center;background-size:16px 16px}
-  body.talking #near,body.talking #breath,body.talking #sign,body.talking #talkbtn,body.talking #toast,body.talking #hint,body.talking #stick,body.talking #snd,body.talking #chr,body.talking #sndp,body.talking #chrp,body.talking #save{display:none}   /* 대화창이 뜨면 소리·캐릭터 버튼과 패널도 숨긴다(폰에서 대화창을 가렸음, 붐 11/9) */
+  body.talking #near,body.talking #breath,body.talking #sign,body.talking #talkbtn,body.talking #toast,body.talking #hint,body.talking #stick,body.talking #snd,body.talking #chr,body.talking #sndp,body.talking #chrp{display:none}   /* 대화창이 뜨면 소리·캐릭터 버튼과 패널도 숨긴다(폰에서 대화창을 가렸음, 붐 11/9) */
   #ui:has(#sndp:not([hidden])) #stick,#ui:has(#chrp:not([hidden])) #stick,#ui:has(#sndp:not([hidden])) #hint,#ui:has(#chrp:not([hidden])) #hint{display:none}   /* 패널이 열리면 스틱·안내는 잠시 숨긴다(모바일 겹침) */
   .touch #sndp,.touch #chrp{bottom:64px;max-height:62vh;overflow-y:auto;width:min(86vw,300px)}
   .touch #ui:has(#sndp:not([hidden])) #breath,.touch #ui:has(#sndp:not([hidden])) #chr,.touch #ui:has(#chrp:not([hidden])) #breath{display:none}
@@ -141,7 +141,7 @@
   #toast.on{opacity:1;transform:translate(-50%,0)}
   #toast.jump,#sign.jump,#whisper.jump{transition-property:opacity,transform}   /* 새로 뜨는 창은 제자리에서 바로 나타난다(top 은 미끄러지지 않게) */
   #toast .n{font-family:var(--pxl);font-size:clamp(18px,3vw,24px);letter-spacing:.2em;text-shadow:2px 2px 0 #000}
-  #toast .s{font-family:var(--px);font-size:12px;color:var(--moss);letter-spacing:.1em;margin-top:6px;line-height:1.8}
+  #toast .s{font-family:var(--px);font-size:12px;color:var(--moss);letter-spacing:.1em;margin-top:6px;line-height:1.8} #toast .s:empty{display:none}
   #toast button{margin:12px 4px 0;font-size:12px;letter-spacing:.25em;padding:3px 14px}
   #title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#070b0f;image-rendering:pixelated;pointer-events:auto;transition:opacity 1.4s;z-index:5;text-align:center;padding:18px 20px;overflow:auto;gap:14px}
   #title::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,11,15,.15) 0%,rgba(7,11,15,.35) 50%,rgba(7,11,15,.75) 100%);pointer-events:none}
@@ -178,7 +178,7 @@
   <div id="fogfx"></div>
   <div id="hud"><b>한 숨</b><span id="where">대나무숲 · 밤</span><small id="count"></small><small id="sw" style="pointer-events:auto;cursor:pointer;text-decoration:underline dotted;color:var(--paper)">숲 바꾸기</small></div>
   <div id="whisper"></div>
-  <div id="toast"><div class="n"></div><div class="s"></div><div><button id="ttalk" hidden>숲과 이야기하기</button><button id="save">이 장면 저장</button><button id="tclose">닫기</button></div></div>
+  <div id="toast"><div class="n"></div><div class="s"></div><div><button id="ttalk" hidden>숲과 이야기하기</button></div></div>
   <div id="sign"><div class="k">오늘 밤의 한 줄</div><div class="l"></div></div>
   <div id="cairn"><div class="k">돌 탑</div><div class="t">쌓아 올린 돌마다 누군가의 밤이 있어요.<br>여기서는 숲이 대답해요.</div><button id="cairnbtn">돌탑에 말 걸기</button></div>
   <div id="near" hidden><div class="m"></div><div class="t"></div><button id="nado">나 도</button></div>
@@ -665,14 +665,13 @@ for (const b of document.querySelectorAll('#form .opts button')) b.onclick = () 
   $('form').hidden = true; delete warn.dataset.seen; releaseSigh(mode, mode === 'none' ? '' : text);
 };
 const anims = []; let toastT = 0;
-function toast(n, s) { $('toast').querySelector('.n').textContent = n; $('toast').querySelector('.s').textContent = s; $('toast').classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), $('ttalk').hidden ? 9000 : 18000); }
-$('tclose').onclick = () => $('toast').classList.remove('on');
+function toast(n, s) { $('toast').querySelector('.n').textContent = n; $('toast').querySelector('.s').textContent = s; $('toast').classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), $('ttalk').hidden ? 4500 : 10000); }
 function removeLeaf(L) { scene.remove(L.mesh); const i = LEAVES.indexOf(L); if (i >= 0) LEAVES.splice(i, 1); }
 function releaseSigh(mode, text) {
   const s = {id: 'me' + Date.now(), text, t: Date.now(), len: pendingLen, nado: 0};
   if (text) { talk.seed = text; talk.msgs = []; tlog.innerHTML = ''; } $('ttalk').hidden = !text; $('talkbtn').hidden = true;   // 글이 있는 한숨만 이야기로 이어진다
   const from = mouthPos(); puff(6, .45);   // 잎은 입김과 함께 입에서 나온다
-  const finish = (n, msg) => { addFirefly(s.x, s.z); updateCount(); chime(); toast(`오늘 밤 ${(n || tonight()).toLocaleString()}번째 한숨`, msg); };
+  const finish = (n, msg) => { addFirefly(s.x, s.z); updateCount(); chime(); toast(`오늘 밤 ${(n || tonight()).toLocaleString()}번째 한숨`, ''); };   // 설명 글 없이 몇 번째인지만(붐 11/9)
   if (mode === 'priv') { s.x = player.x + Math.sin(player.face) * .7; s.z = player.z + Math.cos(player.face) * .7; s.y = groundY(s.x, s.z) + .08; const L = makeLeaf({...s, mine: true, pub: false}); L.mesh.position.copy(from); anims.push({L, from, to: new THREE.Vector3(s.x, s.y, s.z), t: 0, dur: 1.8, high: .4}); myPriv.push(s); ls.set(SK('hanseum_priv'), myPriv); api('/sigh', {text: '', x: s.x, z: s.z}).then(d => { if (d.ok) { online = true; ffPlaced++; } }).catch(() => {});   // 글은 이 기기에만, 불빛은 모두의 숲에
     cam.dTarget = 7; cam.pTarget = .6; setTimeout(() => { cam.dTarget = 4.4; cam.pTarget = .5; }, 3000); rustle(.5); setTimeout(() => finish(null, '땅이 받아 두었어요. 당신만 찾을 수 있어요.'), 1600); return; }
   const dist = Math.min(13, 3 + pendingLen * 2.6); let b = null; for (let k = 0; k < 30 && !b; k++) { const a = player.face + rnd(-.6, .6), d = dist * rnd(.7, 1.1); const c = nearBamboo(player.x + Math.sin(a) * d, player.z + Math.cos(a) * d, 2); if (c) b = c; } if (!b) b = nearBamboo(player.x + Math.sin(player.face) * 3, player.z + Math.cos(player.face) * 3, 8) || randomPerch() || {x: player.x + 2, z: player.z - 2};
@@ -726,8 +725,6 @@ const cairnEl = $('cairn'); let cairnOn = false; $('cairnbtn').onclick = () => o
 $('tclose2').onclick = closeTalk; $('talkbtn').onclick = () => openTalk(); $('ttalk').onclick = () => openTalk(talk.seed);
 
 /* ───────────── 장면 저장 ───────────── */
-$('save').onclick = () => { renderFrame(); const src = renderer.domElement; const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.drawImage(src, 0, 0); const s = c.width / 900; g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, c.height - 120 * s, c.width, 120 * s); g.fillStyle = '#e9e4d6'; g.textAlign = 'center'; g.font = `${26 * s}px "Noto Serif KR",serif`; g.fillText($('toast').querySelector('.n').textContent, c.width / 2, c.height - 66 * s); g.font = `${13 * s}px "Noto Serif KR",serif`; g.fillStyle = '#8aa08a'; g.fillText('한 숨 · ' + TH.name, c.width / 2, c.height - 36 * s);
-  c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'hanseum.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, 'image/png'); };
 
 /* ───────────── 조작 ───────────── */
 const keys = {}; addEventListener('keydown', e => { if (!$('form').hidden || !talkEl.hidden) return; keys[e.code] = true; if (e.code === 'Space' && !e.repeat) { e.preventDefault(); holdStart(); } if (e.code === 'KeyP') setPix(!PIX.on); if (e.code === 'KeyC' && CHARS.length > 1) cycleChar(); if (e.code === 'KeyQ') cam.yaw += .6; if (e.code === 'KeyE') cam.yaw -= .6; }); addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Space') holdEnd(); });
