@@ -28,8 +28,8 @@
   #hud{position:absolute;left:10px;top:10px;font-family:var(--px);font-size:11px;letter-spacing:.15em;color:var(--moss);text-shadow:1px 1px 0 #000;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:0 6px 4px;background:none}
   #hud b{display:block;font-weight:400;font-family:var(--pxl);font-size:16px;letter-spacing:.4em;color:var(--paper);margin-bottom:4px}
   #hud small{display:block;letter-spacing:.05em;margin-top:4px}
-  #whisper{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:var(--pxl);font-size:clamp(15px,2.6vw,21px);line-height:1.9;letter-spacing:.06em;color:var(--paper);opacity:0;transition:opacity 1.4s;text-shadow:2px 2px 0 #000;padding:0 36px;white-space:pre-line}
-  #whisper.on{opacity:.92}
+  #whisper{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:var(--pxl);font-size:clamp(15px,2.6vw,21px);line-height:1.9;letter-spacing:.06em;color:var(--paper);opacity:0;transition:opacity 1.2s,transform 1.2s,top .6s ease;transform:translateY(-10px);text-shadow:2px 2px 0 #000;padding:0 36px;white-space:pre-line}
+  #whisper.on{opacity:.92;transform:none}
   #whisper i{display:block;font-style:normal;font-family:var(--px);font-size:11px;letter-spacing:.3em;color:var(--moss);margin-bottom:8px}
   #near{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);min-width:220px;max-width:min(78vw,420px);pointer-events:auto;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:2px 8px 6px;font-family:var(--pxl);font-size:14px;line-height:1.8;text-align:center}
   #near .t{white-space:pre-line}
@@ -46,10 +46,10 @@
   #cairn button{padding-left:30px;background-image:url(art/ic_talk.png);background-repeat:no-repeat;background-position:8px center;background-size:16px 16px}
   body.talking #cairn{display:none}
   @media (prefers-reduced-motion:reduce){#cairn{transition:none}}
-  #sign{position:absolute;left:50%;top:17%;transform:translateX(-50%);max-width:min(82vw,480px);text-align:center;opacity:0;transition:opacity .7s;pointer-events:none;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:0 10px 6px}
+  #sign{position:absolute;left:50%;top:17%;transform:translate(-50%,-10px);max-width:min(82vw,480px);text-align:center;opacity:0;transition:opacity .7s,transform .7s,top .6s ease;pointer-events:none;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:0 10px 6px}
   #sign .k{font-family:var(--px);font-size:11px;letter-spacing:.3em;color:var(--moss);margin-bottom:6px}
   #sign .l{font-family:var(--pxl);font-size:18px;line-height:1.7;color:var(--paper);text-shadow:2px 2px 0 #000}
-  #sign.on{opacity:1}
+  #sign.on{opacity:1;transform:translate(-50%,0)}
   #hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-family:var(--px);font-size:11px;letter-spacing:.1em;color:var(--dim);text-shadow:1px 1px 0 #000}
   #chr,#snd{position:absolute;right:12px;pointer-events:auto;padding-left:28px;background-image:url(art/ic_char.png);background-repeat:no-repeat;background-position:6px center;background-size:16px 16px}
   #chr{bottom:56px}
@@ -130,9 +130,10 @@
   #form .cancel{display:block;margin:12px auto 0;background:none;border:none;color:var(--dim);font-family:var(--px);font-size:12px;letter-spacing:.3em;cursor:pointer}
   #form .cancel:hover{color:var(--paper)}
   #form .warn{display:none;font-family:var(--pxl);font-size:13px;line-height:1.8;color:var(--paper);background:rgba(233,228,214,.06);border:8px solid transparent;border-image:url(art/frame_btn.png) 16 repeat;image-rendering:pixelated;padding:6px 8px;margin:0 0 12px}
-  #toast{position:absolute;left:50%;top:9%;transform:translateX(-50%);text-align:center;pointer-events:auto;opacity:0;transition:opacity 1s;max-width:86vw;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:2px 12px 8px}
+  #toast{position:absolute;left:50%;top:9%;transform:translate(-50%,-10px);text-align:center;pointer-events:auto;opacity:0;transition:opacity 1s,transform 1s,top .6s ease;max-width:86vw;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:2px 12px 8px}
   #toast:not(.on){pointer-events:none}
-  #toast.on{opacity:1}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  #toast.jump,#sign.jump,#whisper.jump{transition-property:opacity,transform}   /* 새로 뜨는 창은 제자리에서 바로 나타난다(top 은 미끄러지지 않게) */
   #toast .n{font-family:var(--pxl);font-size:clamp(18px,3vw,24px);letter-spacing:.2em;text-shadow:2px 2px 0 #000}
   #toast .s{font-family:var(--px);font-size:12px;color:var(--moss);letter-spacing:.1em;margin-top:6px;line-height:1.8}
   #toast button{margin:12px 4px 0;font-size:12px;letter-spacing:.25em;padding:3px 14px}
@@ -172,7 +173,7 @@
   <div id="hud"><b>한 숨</b><span id="where">대나무숲 · 밤</span><small id="count"></small><small id="sw" style="pointer-events:auto;cursor:pointer;text-decoration:underline dotted;color:var(--paper)">숲 바꾸기</small></div>
   <div id="whisper"></div>
   <div id="toast"><div class="n"></div><div class="s"></div><div><button id="ttalk" hidden>숲과 이야기하기</button><button id="save">이 장면 저장</button><button id="tclose">닫기</button></div></div>
-  <div id="sign"><div class="k">밤 의 한 줄</div><div class="l"></div></div>
+  <div id="sign"><div class="k">오늘 밤의 한 줄</div><div class="l"></div></div>
   <div id="cairn"><div class="k">돌 탑</div><div class="t">쌓아 올린 돌마다 누군가의 밤이 있어요.<br>여기서는 숲이 대답해요.</div><button id="cairnbtn">돌탑에 말 걸기</button></div>
   <div id="near" hidden><div class="m"></div><div class="t"></div><button id="nado">나 도</button></div>
   <button id="talkbtn" hidden>이야기 이어가기</button>
@@ -572,7 +573,7 @@ const groundY = (x, z) => onPier(x, z) ? .36 : (RAIN && Math.hypot(x, z) < 2.5) 
 let AC = null, master = null, windFilt = null, windGain = null, breathGain = null, breathFilt = null;
 const VOL = ls.get('hanseum_vol', {}); const BUS = {};   // key → {name, desc, node}
 const LAYERS = [{k: 'master', n: '전체', d: '모든 소리'},
-  ...(RAIN ? [{k: 'rain', n: '빗소리', d: '고르게 내리는 비 (녹음)'}, {k: 'drops', n: '빗방울', d: '연못과 처마에 톡톡'}, {k: 'wind', n: '바람', d: '젖은 바람'}]
+  ...(RAIN ? [{k: 'rain', n: '빗소리', d: '고르게 내리는 비 (녹음)'}, {k: 'wind', n: '바람', d: '젖은 바람'}]
     : SEA ? [{k: 'waves', n: '파도', d: '물가에 잔잔히 밀려오는 파도 (녹음)'}, {k: 'wind', n: '바람', d: '소금기 섞인 바람'}]
     : SNOW ? [{k: 'forest', n: '숲 소리', d: '침엽수 숲을 지나는 바람 (녹음)'}, {k: 'wind', n: '바람', d: '눈 내리는 밤의 낮은 바람'}, {k: 'steps', n: '발소리', d: '눈 밟는 소리'}]
     : [{k: 'crickets', n: '풀벌레', d: '밤 들판의 귀뚜라미 합창 (녹음)'}, {k: 'wind', n: '바람', d: '대숲을 지나는 바람'}]),
@@ -595,7 +596,7 @@ const AMB = []; function ambient(file, k, gain, fallback) { const el = new Audio
 function themeAudio() {
   const nz = (type, freq, Q, gain, to) => { const s = AC.createBufferSource(); s.buffer = noiseBuf(AC); s.loop = true; const f = AC.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = Q; const g = AC.createGain(); g.gain.value = gain; s.connect(f); f.connect(g); g.connect(to); s.start(); return {f, g}; };
   if (RAIN) { ambient('rain.mp3', 'rain', .5, () => { nz('highpass', 1800, .5, .07, bus('rain')); nz('bandpass', 600, .8, .05, bus('rain')); }); windGain.gain.value = .04;
-    const drop = () => { if (AC.state !== 'running') { setTimeout(drop, 400); return; } const o = AC.createOscillator(); o.type = 'sine'; const f = 1800 + Math.random() * 2400; o.frequency.setValueAtTime(f, AC.currentTime); o.frequency.exponentialRampToValueAtTime(f * .5, AC.currentTime + .05); const g = AC.createGain(); g.gain.setValueAtTime(.012 + Math.random() * .012, AC.currentTime); g.gain.exponentialRampToValueAtTime(.0003, AC.currentTime + .08); o.connect(g); g.connect(bus('drops')); o.start(); o.stop(AC.currentTime + .1); setTimeout(drop, 40 + Math.random() * 180); }; drop(); }
+  }   // 빗방울 톡톡 소리는 뺐다(붐 11/9)
   else if (SEA) { ambient('ocean.mp3', 'waves', .5, () => { const w = nz('lowpass', 500, .3, .1, bus('waves')); const lfo = AC.createOscillator(); lfo.frequency.value = .09; const lg = AC.createGain(); lg.gain.value = .09; lfo.connect(lg); lg.connect(w.g.gain); lfo.start(); const lfo2 = AC.createOscillator(); lfo2.frequency.value = .07; const lg2 = AC.createGain(); lg2.gain.value = 260; lfo2.connect(lg2); lg2.connect(w.f.frequency); lfo2.start(); }); }
   else if (SNOW) { windGain.gain.value = .035; windFilt.frequency.value = 220; ambient('forest.mp3', 'forest', .45); }
   else { ambient('insects.mp3', 'crickets', .5, () => { const chirp = () => { if (AC.state !== 'running') { setTimeout(chirp, 500); return; } const n = 3 + Math.floor(Math.random() * 4), f = 3800 + Math.random() * 800, t0 = AC.currentTime; for (let i = 0; i < n; i++) { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = AC.createGain(); const t = t0 + i * .07; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.006, t + .015); g.gain.linearRampToValueAtTime(0, t + .05); o.connect(g); g.connect(bus('crickets')); o.start(t); o.stop(t + .06); } setTimeout(chirp, 600 + Math.random() * 2200); }; chirp(); }); }
@@ -604,7 +605,7 @@ function snowStep() { if (!AC || !SNOW) return; const s = AC.createBufferSource(
 function rustle(strength = 1) { if (!AC) return; const s = AC.createBufferSource(); s.buffer = noiseBuf(AC); const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2600; f.Q.value = .6; const g = AC.createGain(); const t = AC.currentTime; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.09 * strength, t + .6); g.gain.exponentialRampToValueAtTime(.0005, t + 2.6); s.connect(f); f.connect(g); g.connect(bus('leaves')); s.start(); s.stop(t + 2.8); }
 function chime() { if (!AC) return; const t = AC.currentTime; [523.25, 659.25, 783.99].forEach((f, i) => { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = AC.createGain(); g.gain.setValueAtTime(0, t + i * .12); g.gain.linearRampToValueAtTime(.05, t + i * .12 + .02); g.gain.exponentialRampToValueAtTime(.0005, t + i * .12 + 2.2); o.connect(g); g.connect(bus('chime')); o.start(t + i * .12); o.stop(t + i * .12 + 2.3); }); }
 // 소리 패널: 숲 이름 + 레이어별 슬라이더(무슨 소리인지 설명 포함)
-function renderSound() { $('sndt').textContent = TH.name + '의 소리'; $('sndrows').innerHTML = LAYERS.map(L => `<div class="row ${L.k === 'master' ? 'master' : ''}"><label>${L.n}<small>${L.d}</small></label><input type="range" min="0" max="100" value="${Math.round(vol(L.k) * 100)}" data-k="${L.k}" aria-label="${L.n}"></div>`).join('') + `<div class="credit">${CREDIT}${RAIN ? '' : ' · Wikimedia Commons'}</div>`;
+function renderSound() { $('sndt').textContent = TH.name + '의 소리'; $('sndrows').innerHTML = LAYERS.map(L => `<div class="row ${L.k === 'master' ? 'master' : ''}"><label>${L.n}<small>${L.d}</small></label><input type="range" min="0" max="100" value="${Math.round(vol(L.k) * 100)}" data-k="${L.k}" aria-label="${L.n}"></div>`).join('') + ``;
   for (const inp of $('sndrows').querySelectorAll('input')) inp.oninput = () => setVol(inp.dataset.k, +inp.value); updateMute(); }
 function updateMute() { const off = vol('master') === 0; $('mute').textContent = off ? '전체 켜기' : '전체 끄기'; $('snd').textContent = off ? '소리 꺼짐' : '소리'; }
 let lastMaster = 80;
@@ -747,6 +748,10 @@ function renderFrame() { if (PIX.on) { renderer.setRenderTarget(pixRT); renderer
 
 /* ───────────── 루프 ───────────── */
 const clock = new THREE.Clock(); let frames = 0; const signEl = $('sign');
+const CARDS = [$('toast'), $('sign'), $('whisper')], cardWas = new WeakMap();   // 위쪽 창 쌓기 순서(붐 11/9: 창끼리 겹치지 않게)
+function layoutCards() { let y = innerHeight * .09; for (const el of CARDS) { const on = el.classList.contains('on'); if (!on) { cardWas.set(el, false); continue; } const top = Math.round(y) + 'px';
+    if (!cardWas.get(el)) { el.classList.add('jump'); el.style.top = top; requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('jump'))); cardWas.set(el, true); } else if (el.style.top !== top) el.style.top = top;
+    y += el.offsetHeight + 12; } }
 function whereLabel() { const r = Math.hypot(player.x, player.z); if (SEA && onPier(player.x, player.z)) return '잔교'; if (SEA && player.x > SHORE) return '모래밭'; if (RAIN && inPond(player.x, player.z, 1.4)) return '연못가'; return player.z > 20 ? '숲 입구' : player.z > 8 && Math.abs(player.x) < 2 ? '대숲 길' : r < CLEAR_R ? TH.center : '숲 속'; }
 function frame() {
   const dt = Math.min(.05, clock.getDelta()); T.value = clock.elapsedTime; let moving = false; frames++;
@@ -784,7 +789,7 @@ function frame() {
   cam.dist += (cam.dTarget - cam.dist) * Math.min(1, dt * 3); cam.pitch += (cam.pTarget - cam.pitch) * Math.min(1, dt * 3);
   const dH = cam.dist * Math.cos(cam.pitch), dV = cam.dist * Math.sin(cam.pitch);
   camera.position.set(player.x + Math.sin(cam.yaw) * dH, gy + 1.1 + dV, player.z + Math.cos(cam.yaw) * dH); camera.lookAt(player.x, gy + 1.1, player.z);
-  updateWind(dt); updateAnims(dt); updateNear(); signEl.classList.toggle('on', started && Math.hypot(player.x - 2.3, player.z - 11.5) < 3.4); const nearTower = started && talkEl.hidden && Math.hypot(player.x - TOWER.x, player.z - TOWER.z) < 2.6; if (nearTower !== cairnOn) { cairnOn = nearTower; cairnEl.classList.toggle('on', nearTower); if (nearTower) $('cairnbtn').textContent = talk.msgs.length ? '이야기 이어가기' : '돌탑에 말 걸기'; }
+  updateWind(dt); updateAnims(dt); updateNear(); signEl.classList.toggle('on', started && Math.hypot(player.x - 2.3, player.z - 11.5) < 3.4); layoutCards(); const nearTower = started && talkEl.hidden && Math.hypot(player.x - TOWER.x, player.z - TOWER.z) < 2.6; if (nearTower !== cairnOn) { cairnOn = nearTower; cairnEl.classList.toggle('on', nearTower); if (nearTower) $('cairnbtn').textContent = talk.msgs.length ? '이야기 이어가기' : '돌탑에 말 걸기'; }
   for (const L of LEAVES) if (!L.buried) { L.mesh.rotation.z = Math.sin(T.value * 2.2 + L.phase) * .1 * WIND.value; L.halo.material.opacity = (.35 + glowOf(L.nado) * .65) * (.75 + .25 * Math.sin(T.value * 1.3 + L.phase)); }
   updateOthers(dt); renderFrame(); requestAnimationFrame(frame);
 }
