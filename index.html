@@ -658,7 +658,7 @@ function holdStart() { if (!started || holding || formTm || !$('form').hidden ||
 function holdEnd() { if (!holding) return; holding = false; breathBtn.classList.remove('hold'); breathBtn.style.setProperty('--p', 0); fogfx.style.opacity = 0; cam.dTarget = 4.4; cam.pTarget = .5; exhale(holdT);
   if (holdT < .35) return; pendingLen = holdT; formTm = setTimeout(() => { formTm = 0; openForm(); }, 900 + Math.min(3.5, holdT) * 250); }   // 입김이 흘러가는 걸 본 뒤에 입력창
 // 날숨: 캐릭터가 어깨를 떨구고 입김을 내뿜는다. 길게 눌렀을수록 입김이 많고 소리도 길다.
-function exhale(len) { const L = Math.min(3.5, len); sigh.phase = 'out'; sigh.t = 0; sigh.dur = 1.3 + L * .4; puff(Math.round(14 + L * 14), .55 + L * .22); sparkFly(1, .55 + L * .22); breathBtn.textContent = '후우'; clearTimeout(exhale.tm); exhale.tm = setTimeout(() => breathBtn.textContent = '한숨', 1500);
+function exhale(len) { const L = Math.min(3.5, len); sigh.phase = 'out'; sigh.t = 0; sigh.dur = 1.3 + L * .4; puff(Math.round(14 + L * 14), .55 + L * .22); breathBtn.textContent = '후우'; clearTimeout(exhale.tm); exhale.tm = setTimeout(() => breathBtn.textContent = '한숨', 1500);
   if (breathGain && playSigh(2.0, 2.2, 1.0 + L * .5, .5)) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setTargetAtTime(0, t, .05); }   // 녹음 한숨: 길게 누를수록 느리고 길게
   else if (breathGain) { const t = AC.currentTime, d = .8 + L * .35; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setValueAtTime(Math.max(.02, breathGain.gain.value), t); breathGain.gain.linearRampToValueAtTime(.22, t + .1); breathGain.gain.exponentialRampToValueAtTime(.001, t + d); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(750, t); breathFilt.frequency.exponentialRampToValueAtTime(300, t + d); } }
 breathBtn.addEventListener('pointerdown', e => { e.preventDefault(); holdStart(); }); breathBtn.addEventListener('pointerup', holdEnd); breathBtn.addEventListener('pointerleave', holdEnd); breathBtn.addEventListener('pointercancel', holdEnd);
@@ -683,7 +683,7 @@ function removeLeaf(L) { scene.remove(L.mesh); const i = LEAVES.indexOf(L); if (
 function releaseSigh(mode, text) {
   const s = {id: 'me' + Date.now(), text, t: Date.now(), len: pendingLen, nado: 0};
   if (text) { talk.seed = text; talk.msgs = []; tlog.innerHTML = ''; } $('ttalk').hidden = !text; $('talkbtn').hidden = true;   // 글이 있는 한숨만 이야기로 이어진다
-  const from = mouthPos(); puff(6, .45);   // 잎은 입김과 함께 입에서 나온다
+  const from = mouthPos(); puff(6, .45); if (mode === 'none') sparkFly(1, .6);   // 잎은 입김과 함께 입에서 나온다. 반딧불은 "글 없이 두기"에서만 입에서 나온다(붐 11/9)
   const finish = (n, msg) => { addFirefly(s.x, s.z); updateCount(); chime(); toast(`오늘 밤 ${(n || tonight()).toLocaleString()}번째 한숨`, ''); };   // 설명 글 없이 몇 번째인지만(붐 11/9)
   if (mode === 'priv') { s.x = player.x + Math.sin(player.face) * .7; s.z = player.z + Math.cos(player.face) * .7; s.y = groundY(s.x, s.z) + .08; const L = makeLeaf({...s, mine: true, pub: false}); L.mesh.position.copy(from); anims.push({L, from, to: new THREE.Vector3(s.x, s.y, s.z), t: 0, dur: 1.8, high: .4}); myPriv.push(s); ls.set(SK('hanseum_priv'), myPriv); api('/sigh', {text: '', x: s.x, z: s.z}).then(d => { if (d.ok) { online = true; ffPlaced++; } }).catch(() => {});   // 글은 이 기기에만, 불빛은 모두의 숲에
     cam.dTarget = 7; cam.pTarget = .6; setTimeout(() => { cam.dTarget = 4.4; cam.pTarget = .5; }, 3000); rustle(.5); setTimeout(() => finish(null, '땅이 받아 두었어요. 당신만 찾을 수 있어요.'), 1600); return; }
