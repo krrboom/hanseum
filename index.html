@@ -539,22 +539,29 @@ const puffMat = new THREE.ShaderMaterial({transparent: true, depthWrite: false, 
   fragmentShader: `uniform sampler2D map; uniform vec3 color; varying float vA; void main(){ vec4 t = texture2D(map, gl_PointCoord); gl_FragColor = vec4(color, t.a * vA); }`});
 const puffPts = new THREE.Points(puffGeo, puffMat); puffPts.frustumCulled = false; scene.add(puffPts);
 /* ───────────── 날아가는 반딧불 (한숨을 내쉬면 입에서 노란 불빛이 날아오른다, 붐 11/9) ───────────── */
-const SPK_N = 60, spkPos = new Float32Array(SPK_N * 3), spkA = new Float32Array(SPK_N), spkS = new Float32Array(SPK_N); const sparks = [];
+const SPK_N = 40, spkPos = new Float32Array(SPK_N * 3), spkA = new Float32Array(SPK_N), spkS = new Float32Array(SPK_N); const sparks = [];
 const spkGeo = new THREE.BufferGeometry(); spkGeo.setAttribute('position', new THREE.BufferAttribute(spkPos, 3)); spkGeo.setAttribute('aA', new THREE.BufferAttribute(spkA, 1)); spkGeo.setAttribute('aS', new THREE.BufferAttribute(spkS, 1)); spkGeo.setDrawRange(0, 0);
 const spkMat = new THREE.ShaderMaterial({transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {uColor: {value: new THREE.Color(0xffd766)}},
   vertexShader: `attribute float aA; attribute float aS; varying float vA; void main(){ vA = aA; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = min(72.0, aS * (300.0 / max(1.0, -mv.z))); gl_Position = projectionMatrix * mv; }`,
   fragmentShader: `uniform vec3 uColor; varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; float core = smoothstep(0.18, 0.0, d); float halo = smoothstep(0.5, 0.05, d) * 0.75; float a = (core + halo) * vA; gl_FragColor = vec4(mix(uColor, vec3(1.0, 0.98, 0.85), core) * a, a); }`});
 const spkPts = new THREE.Points(spkGeo, spkMat); spkPts.frustumCulled = false; scene.add(spkPts);
-// 입김과 같이 입에서 나와 앞으로 조금 밀리다가, 날개를 편 듯 위로 떠오르며 흩어져 대숲 사이로 사라진다. 긴 한숨이면 더 많이, 더 오래
-function sparkFly(n, strength) { const m = mouthPos(); for (let k = 0; k < n && sparks.length < SPK_N; k++) { const a = player.face + rnd(-.7, .7), sp = rnd(.5, 1.3) * strength;
-  sparks.push({x: m.x + rnd(-.05, .05), y: m.y + rnd(-.03, .03), z: m.z + rnd(-.05, .05), vx: Math.sin(a) * sp, vy: rnd(.3, .6), vz: Math.cos(a) * sp, t: -k * rnd(.08, .2), dur: rnd(4.5, 8) * (.8 + strength * .25), s: rnd(.1, .16), ph: Math.random() * 100, wob: rnd(1.2, 2.4)}); } }
-function updateSparks(dt) { for (let i = sparks.length - 1; i >= 0; i--) { const p = sparks[i]; p.t += dt; if (p.t < 0) continue; if (p.t > p.dur) { sparks.splice(i, 1); continue; }
-    const tt = T.value + p.ph; const k = 1 - dt * .9; p.vx *= k; p.vz *= k;                                       // 입김의 밀림은 금방 잦아들고
-    p.vy += (Math.min(1.1, .35 + p.t * .18) - p.vy) * dt * .8;                                                      // 서서히 위로 오르는 힘이 커진다
-    const wx = Math.sin(tt * p.wob) * .55 + Math.sin(tt * .37) * .3, wz = Math.cos(tt * p.wob * .8) * .55 + Math.cos(tt * .41) * .3;   // 반딧불답게 이리저리 흔들리며
-    p.x += (p.vx + wx + Math.sin(T.value * .7) * .25 * WIND.value) * dt; p.y += (p.vy + Math.sin(tt * 2.1) * .25) * dt; p.z += (p.vz + wz + Math.cos(T.value * .5) * .15 * WIND.value) * dt; }
-  let n = 0; for (const p of sparks) { if (p.t < 0) continue; const u = p.t / p.dur; const tw = .55 + .45 * Math.sin(T.value * 5 + p.ph * 3);   // 깜빡임
-    spkPos[n * 3] = p.x; spkPos[n * 3 + 1] = p.y; spkPos[n * 3 + 2] = p.z; spkA[n] = Math.min(1, p.t / .4) * (u < .6 ? 1 : 1 - (u - .6) / .4) * tw; spkS[n] = p.s; n++; }
+// 한숨 하나에 반딧불 한 마리. 입김과 함께 입에서 나와 잠깐 앞으로 흘러가다가, 그 뒤로는 제멋대로 숲을 날아다닌다. 사라지지 않는다(너무 많아지면 가장 오래된 것이 천천히 꺼진다)
+const SPK_KEEP = 24;
+function sparkFly(n, strength) { const m = mouthPos(); for (let k = 0; k < n; k++) { if (sparks.filter(p => !p.dying).length >= SPK_KEEP) { const old = sparks.find(p => !p.dying); if (old) { old.dying = true; old.dt0 = 0; } }
+    sparks.push({x: m.x, y: m.y, z: m.z, hx: m.x, hz: m.z, h: player.face + rnd(-.3, .3), pitch: .25, turn: 0, spd: .5 * strength + .3, t: 0, ph: Math.random() * 100, blink: rnd(2.0, 3.4), s: .15, dying: false}); } }
+function updateSparks(dt) { const d = Math.min(dt, .05); for (let i = sparks.length - 1; i >= 0; i--) { const p = sparks[i]; p.t += d;
+    if (p.dying) { p.dt0 += d; if (p.dt0 > 4) { sparks.splice(i, 1); continue; } }
+    // 진로: 회전 속도가 랜덤하게 흔들리고(부드러운 잡음), 그 적분이 방향이 된다 → 곡선을 그리며 제멋대로 난다
+    p.turn += (rnd(-1, 1) * 3.2 - p.turn * 1.6) * d; p.h += p.turn * d * 2.2;
+    const tgtSpd = p.t < 1.2 ? .9 : .35 + .45 * (0.5 + 0.5 * Math.sin(p.t * .7 + p.ph));          // 처음엔 입김에 밀려 조금 빠르고, 그 뒤엔 느릿느릿 오르내림
+    p.spd += (tgtSpd - p.spd) * d * 1.5;
+    const dx = p.x - p.hx, dz = p.z - p.hz, far = Math.hypot(dx, dz); if (far > 7) { const back = Math.atan2(-dx, -dz); let diff = back - p.h; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); p.h += diff * d * 1.2; }   // 처음 자리에서 너무 멀어지면 슬슬 돌아온다
+    const yTgt = 1.0 + 1.3 * (0.5 + 0.5 * Math.sin(p.t * .31 + p.ph * 2)); p.pitch += ((yTgt - p.y) * .9 + Math.sin(p.t * 2.3 + p.ph) * .35 - p.pitch) * d * 2;   // 높이는 허리~머리 위를 오르내린다
+    p.x += (Math.sin(p.h) * p.spd + Math.sin(T.value * .7) * .15 * WIND.value) * d; p.z += (Math.cos(p.h) * p.spd + Math.cos(T.value * .5) * .1 * WIND.value) * d; p.y += p.pitch * d;
+    if (p.y < .4) { p.y = .4; p.pitch = Math.abs(p.pitch); } if (SEA && p.x > SHORE + 2) { p.x = SHORE + 2; p.h = -p.h; } }
+  // 빛: 진짜 반딧불처럼 2~3초마다 한 번 천천히 밝아졌다 꺼진다. 꺼진 동안에도 아주 희미하게는 보인다
+  let n = 0; for (const p of sparks) { const u = (p.t % p.blink) / p.blink; const flash = u < .45 ? Math.sin(u / .45 * Math.PI) : 0; let a = .08 + flash * .92; a *= Math.min(1, p.t / .5); if (p.dying) a *= Math.max(0, 1 - p.dt0 / 4);
+    spkPos[n * 3] = p.x; spkPos[n * 3 + 1] = p.y; spkPos[n * 3 + 2] = p.z; spkA[n] = a; spkS[n] = p.s * (.7 + .3 * flash); n++; }
   spkGeo.setDrawRange(0, n); spkGeo.attributes.position.needsUpdate = spkGeo.attributes.aA.needsUpdate = spkGeo.attributes.aS.needsUpdate = true; }
 function mouthPos() { return hero.localToWorld(new THREE.Vector3(0, .93, .3)); }
 function puff(n, strength) { const m = mouthPos(); for (let k = 0; k < n && puffs.length < PUFF_N; k++) { const a = player.face + rnd(-.5, .5), sp = rnd(.3, 1.0) * strength; puffs.push({x: m.x + rnd(-.04, .04), y: m.y + rnd(-.03, .03), z: m.z + rnd(-.04, .04), vx: Math.sin(a) * sp, vy: rnd(.04, .2), vz: Math.cos(a) * sp, t: -k * .04, dur: rnd(1.0, 2.0) * (.8 + strength * .3), s: rnd(.06, .15)}); } }
@@ -632,7 +639,7 @@ function holdStart() { if (!started || holding || formTm || !$('form').hidden ||
 function holdEnd() { if (!holding) return; holding = false; breathBtn.classList.remove('hold'); breathBtn.style.setProperty('--p', 0); fogfx.style.opacity = 0; cam.dTarget = 4.4; cam.pTarget = .5; exhale(holdT);
   if (holdT < .35) return; pendingLen = holdT; formTm = setTimeout(() => { formTm = 0; openForm(); }, 900 + Math.min(3.5, holdT) * 250); }   // 입김이 흘러가는 걸 본 뒤에 입력창
 // 날숨: 캐릭터가 어깨를 떨구고 입김을 내뿜는다. 길게 눌렀을수록 입김이 많고 소리도 길다.
-function exhale(len) { const L = Math.min(3.5, len); sigh.phase = 'out'; sigh.t = 0; sigh.dur = 1.3 + L * .4; puff(Math.round(14 + L * 14), .55 + L * .22); sparkFly(Math.round(2 + L * 2.2), .55 + L * .22); breathBtn.textContent = '후우'; clearTimeout(exhale.tm); exhale.tm = setTimeout(() => breathBtn.textContent = '한숨', 1500);
+function exhale(len) { const L = Math.min(3.5, len); sigh.phase = 'out'; sigh.t = 0; sigh.dur = 1.3 + L * .4; puff(Math.round(14 + L * 14), .55 + L * .22); sparkFly(1, .55 + L * .22); breathBtn.textContent = '후우'; clearTimeout(exhale.tm); exhale.tm = setTimeout(() => breathBtn.textContent = '한숨', 1500);
   if (breathGain) { const t = AC.currentTime, d = .8 + L * .35; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setValueAtTime(Math.max(.02, breathGain.gain.value), t); breathGain.gain.linearRampToValueAtTime(.22, t + .1); breathGain.gain.exponentialRampToValueAtTime(.001, t + d); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(750, t); breathFilt.frequency.exponentialRampToValueAtTime(300, t + d); } }
 breathBtn.addEventListener('pointerdown', e => { e.preventDefault(); holdStart(); }); breathBtn.addEventListener('pointerup', holdEnd); breathBtn.addEventListener('pointerleave', holdEnd); breathBtn.addEventListener('pointercancel', holdEnd);
 function openForm(keepText) { $('fsub').textContent = `숨 길이 ${pendingLen.toFixed(1)}초${pendingLen > 2.5 ? ' · 긴 한숨이네요' : ''}`; if (!keepText) { $('ftext').value = ''; $('fcnt').textContent = 0; $('fwarn').style.display = 'none'; } $('form').hidden = false; if (!IS_TOUCH) setTimeout(() => $('ftext').focus(), 50); }
@@ -657,7 +664,7 @@ function removeLeaf(L) { scene.remove(L.mesh); const i = LEAVES.indexOf(L); if (
 function releaseSigh(mode, text) {
   const s = {id: 'me' + Date.now(), text, t: Date.now(), len: pendingLen, nado: 0};
   if (text) { talk.seed = text; talk.msgs = []; tlog.innerHTML = ''; } $('ttalk').hidden = !text; $('talkbtn').hidden = true;   // 글이 있는 한숨만 이야기로 이어진다
-  const from = mouthPos(); puff(6, .45); sparkFly(2, .45);   // 잎은 입김과 함께 입에서 나온다
+  const from = mouthPos(); puff(6, .45);   // 잎은 입김과 함께 입에서 나온다
   const finish = (n, msg) => { addFirefly(s.x, s.z); updateCount(); chime(); toast(`오늘 밤 ${(n || tonight()).toLocaleString()}번째 한숨`, msg); };
   if (mode === 'priv') { s.x = player.x + Math.sin(player.face) * .7; s.z = player.z + Math.cos(player.face) * .7; s.y = groundY(s.x, s.z) + .08; const L = makeLeaf({...s, mine: true, pub: false}); L.mesh.position.copy(from); anims.push({L, from, to: new THREE.Vector3(s.x, s.y, s.z), t: 0, dur: 1.8, high: .4}); myPriv.push(s); ls.set(SK('hanseum_priv'), myPriv); api('/sigh', {text: '', x: s.x, z: s.z}).then(d => { if (d.ok) { online = true; ffPlaced++; } }).catch(() => {});   // 글은 이 기기에만, 불빛은 모두의 숲에
     cam.dTarget = 7; cam.pTarget = .6; setTimeout(() => { cam.dTarget = 4.4; cam.pTarget = .5; }, 3000); rustle(.5); setTimeout(() => finish(null, '땅이 받아 두었어요. 당신만 찾을 수 있어요.'), 1600); return; }
@@ -795,6 +802,8 @@ function frame() {
 }
 function enter(s) { if (s !== SERVER) { try { sessionStorage.setItem('hanseum_auto', '1'); } catch (e) {} location.hash = s; location.reload(); return; } history.replaceState(null, '', '#' + SERVER); initAudio(); if (AC.state === 'suspended') AC.resume(); $('title').classList.add('hide'); started = true; }
 try { if (sessionStorage.getItem('hanseum_auto')) { sessionStorage.removeItem('hanseum_auto'); setTimeout(() => { enter(SERVER); const resume = () => { if (AC && AC.state === 'suspended') AC.resume(); removeEventListener('pointerdown', resume); removeEventListener('keydown', resume); }; addEventListener('pointerdown', resume); addEventListener('keydown', resume); }, 200); } } catch (e) {}
+// 메인(타이틀) 화면에서부터 숲 소리가 난다(붐 11/9). 브라우저가 허락하면 바로, 막으면 첫 터치·클릭·키에 시작한다(녹음 파일도 ambient() 가 같은 때 다시 play 한다)
+{ const wake = () => { initAudio(); if (AC.state !== 'running') AC.resume().catch(() => {}); if (AC.state === 'running') for (const t of ['pointerdown', 'keydown', 'touchstart']) removeEventListener(t, wake, true); }; for (const t of ['pointerdown', 'keydown', 'touchstart']) addEventListener(t, wake, true); setTimeout(wake, 300); }
 // 타이틀 배경은 숲마다 다르다: 기본은 지금 고른 숲, 카드에 마우스를 올리거나 포커스하면 그 숲의 배경으로 미리 바뀐다
 function titleBg(s) { for (const el of document.querySelectorAll('#title .bg')) el.classList.toggle('on', el.dataset.m === s); } titleBg(SERVER);
 for (const b of document.querySelectorAll('#servers button')) { b.onclick = () => enter(b.dataset.s); if (b.dataset.s === SERVER) b.style.borderColor = 'rgba(233,228,214,.7)';
