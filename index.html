@@ -28,6 +28,8 @@
   #hud{position:absolute;left:10px;top:10px;font-family:var(--px);font-size:11px;letter-spacing:.15em;color:var(--moss);text-shadow:1px 1px 0 #000;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:0 6px 4px;background:none}
   #hud b{display:block;font-weight:400;font-family:var(--pxl);font-size:16px;letter-spacing:.4em;color:var(--paper);margin-bottom:4px}
   #hud small{display:block;letter-spacing:.05em;margin-top:4px}
+  #tally{position:absolute;right:10px;top:10px;font-family:var(--px);font-size:11px;letter-spacing:.1em;color:var(--paper);text-shadow:1px 1px 0 #000;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:0 6px 4px;white-space:nowrap}
+  #tally:empty{display:none} .touch #tally{border-width:10px;padding:0 4px 2px;font-size:10px;right:6px;top:6px}
   #whisper{position:absolute;left:0;right:0;top:34%;text-align:center;font-family:var(--pxl);font-size:clamp(15px,2.6vw,21px);line-height:1.9;letter-spacing:.06em;color:var(--paper);opacity:0;transition:opacity 1.2s,transform 1.2s,top .6s ease;transform:translateY(-10px);text-shadow:2px 2px 0 #000;padding:0 36px;white-space:pre-line}
   #whisper.on{opacity:.92;transform:none}
   #whisper i{display:block;font-style:normal;font-family:var(--px);font-size:11px;letter-spacing:.3em;color:var(--moss);margin-bottom:8px}
@@ -106,7 +108,7 @@
   #tin button{padding:0 14px;font-size:13px;letter-spacing:.2em}
   #tin button:disabled{opacity:.4;cursor:default}
   #talkbtn{position:absolute;left:50%;bottom:160px;transform:translateX(-50%);pointer-events:auto;font-size:12px;letter-spacing:.2em;padding:3px 12px 3px 30px;background-image:url(art/ic_talk.png);background-repeat:no-repeat;background-position:8px center;background-size:16px 16px}
-  body.talking #near,body.talking #breath,body.talking #sign,body.talking #talkbtn,body.talking #toast,body.talking #hint,body.talking #stick,body.talking #snd,body.talking #chr,body.talking #sndp,body.talking #chrp{display:none}   /* 대화창이 뜨면 소리·캐릭터 버튼과 패널도 숨긴다(폰에서 대화창을 가렸음, 붐 11/9) */
+  body.talking #near,body.talking #breath,body.talking #sign,body.talking #talkbtn,body.talking #toast,body.talking #hint,body.talking #tally,body.talking #stick,body.talking #snd,body.talking #chr,body.talking #sndp,body.talking #chrp{display:none}   /* 대화창이 뜨면 소리·캐릭터 버튼과 패널도 숨긴다(폰에서 대화창을 가렸음, 붐 11/9) */
   #ui:has(#sndp:not([hidden])) #stick,#ui:has(#chrp:not([hidden])) #stick,#ui:has(#sndp:not([hidden])) #hint,#ui:has(#chrp:not([hidden])) #hint{display:none}   /* 패널이 열리면 스틱·안내는 잠시 숨긴다(모바일 겹침) */
   .touch #sndp,.touch #chrp{bottom:64px;max-height:62vh;overflow-y:auto;width:min(86vw,300px)}
   .touch #ui:has(#sndp:not([hidden])) #breath,.touch #ui:has(#sndp:not([hidden])) #chr,.touch #ui:has(#chrp:not([hidden])) #breath{display:none}
@@ -177,6 +179,7 @@
   <div id="vig"></div>
   <div id="fogfx"></div>
   <div id="hud"><b>한 숨</b><span id="where">대나무숲 · 밤</span><small id="count"></small><small id="sw" style="pointer-events:auto;cursor:pointer;text-decoration:underline dotted;color:var(--paper)">숲 바꾸기</small></div>
+  <div id="tally"></div>
   <div id="whisper"></div>
   <div id="toast"><div class="n"></div><div class="s"></div><div><button id="ttalk" hidden>숲과 이야기하기</button></div></div>
   <div id="sign"><div class="k">오늘 밤의 한 줄</div><div class="l"></div></div>
@@ -410,8 +413,7 @@ let ffPlaced = 0;   // 워커 목록에서 이미 불을 켠 개수. 내 한숨�
 function syncLights(lights) { if (LEAVES.some(L => L.id.startsWith('sample'))) return; for (; ffPlaced < lights.length && ffN < FF_MAX; ffPlaced++) { const p = lights[ffPlaced]; addFirefly(+p[0] || 0, +p[1] || 0); } updateCount(); }
 const tonight = () => ffN;
 let peopleTotal = 0;   // 이 숲에 지금 있는 사람 수(나 포함), /pulse 가 알려 준다
-function updateCount() { if (IS_TOUCH) { $('count').textContent = online ? `이 숲에 ${Math.max(1, peopleTotal)}명` : '오프라인'; return; }   // 폰은 인원수만(붐 11/9)
-  $('count').textContent = `오늘 밤 한숨 ${tonight().toLocaleString()}` + (online ? (peopleTotal > 1 ? ` · 이 숲에 ${peopleTotal}명` : '') : ' · 오프라인'); }
+function updateCount() { $('tally').textContent = `오늘 밤 한숨 ${tonight().toLocaleString()}`; $('count').textContent = online ? `이 숲에 ${Math.max(1, peopleTotal)}명` : '오프라인'; }   // 오른쪽 위 = 오늘 밤 한숨 총 개수, 왼쪽 = 인원수(붐 11/9)
 
 /* ───────────── 한숨 저장소: 워커(숲별 Durable Object) + 로컬(비공개·내 것 표시) ───────────── */
 const dayStart = () => { const d = new Date(); if (d.getHours() < 6) d.setDate(d.getDate() - 1); d.setHours(6, 0, 0, 0); return d.getTime(); };
@@ -548,27 +550,27 @@ const puffPts = new THREE.Points(puffGeo, puffMat); puffPts.frustumCulled = fals
 /* ───────────── 날아가는 반딧불 (한숨을 내쉬면 입에서 노란 불빛이 날아오른다, 붐 11/9) ───────────── */
 const SPK_N = 40, spkPos = new Float32Array(SPK_N * 3), spkA = new Float32Array(SPK_N), spkS = new Float32Array(SPK_N); const sparks = [];
 const spkGeo = new THREE.BufferGeometry(); spkGeo.setAttribute('position', new THREE.BufferAttribute(spkPos, 3)); spkGeo.setAttribute('aA', new THREE.BufferAttribute(spkA, 1)); spkGeo.setAttribute('aS', new THREE.BufferAttribute(spkS, 1)); spkGeo.setDrawRange(0, 0);
-const spkMat = new THREE.ShaderMaterial({transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {uColor: {value: new THREE.Color(0xffd766)}},
-  vertexShader: `attribute float aA; attribute float aS; varying float vA; void main(){ vA = aA; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = min(72.0, aS * (300.0 / max(1.0, -mv.z))); gl_Position = projectionMatrix * mv; }`,
+const spkMat = new THREE.ShaderMaterial({transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, uniforms: {uColor: {value: new THREE.Color(0xffd766)}},
+  vertexShader: `attribute float aA; attribute float aS; varying float vA; void main(){ vA = aA; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = min(80.0, aS * (320.0 / max(1.0, -mv.z))); gl_Position = projectionMatrix * mv; }`,
   fragmentShader: `uniform vec3 uColor; varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; float core = smoothstep(0.18, 0.0, d); float halo = smoothstep(0.5, 0.05, d) * 0.75; float a = (core + halo) * vA; gl_FragColor = vec4(mix(uColor, vec3(1.0, 0.98, 0.85), core) * a, a); }`});
 const spkPts = new THREE.Points(spkGeo, spkMat); spkPts.frustumCulled = false; scene.add(spkPts);
 // 한숨 하나에 반딧불 한 마리. 입김과 함께 입에서 나와 잠깐 앞으로 흘러가다가, 그 뒤로는 제멋대로 숲을 날아다닌다. 사라지지 않는다(너무 많아지면 가장 오래된 것이 천천히 꺼진다)
 const SPK_KEEP = 24;
 function sparkFly(n, strength) { const m = mouthPos(); for (let k = 0; k < n; k++) { if (sparks.filter(p => !p.dying).length >= SPK_KEEP) { const old = sparks.find(p => !p.dying); if (old) { old.dying = true; old.dt0 = 0; } }
-    sparks.push({x: m.x, y: m.y, z: m.z, hx: m.x, hz: m.z, h: player.face + rnd(-.3, .3), pitch: .25, turn: 0, spd: .5 * strength + .3, t: 0, ph: Math.random() * 100, blink: rnd(2.0, 3.4), s: .15, dying: false}); } }
+    sparks.push({x: m.x, y: m.y, z: m.z, hx: m.x, hz: m.z, h: player.face + rnd(-1.2, 1.2), pitch: .5, turn: rnd(-1, 1), spd: .4, t: 0, ph: Math.random() * 100, blink: rnd(1.8, 2.8), s: .2, dying: false}); } }
 function updateSparks(dt) { const d = Math.min(dt, .05); for (let i = sparks.length - 1; i >= 0; i--) { const p = sparks[i]; p.t += d;
     if (p.dying) { p.dt0 += d; if (p.dt0 > 4) { sparks.splice(i, 1); continue; } }
     // 진로: 회전 속도가 랜덤하게 흔들리고(부드러운 잡음), 그 적분이 방향이 된다 → 곡선을 그리며 제멋대로 난다
     p.turn += (rnd(-1, 1) * 3.2 - p.turn * 1.6) * d; p.h += p.turn * d * 2.2;
-    const tgtSpd = p.t < 1.2 ? .9 : .35 + .45 * (0.5 + 0.5 * Math.sin(p.t * .7 + p.ph));          // 처음엔 입김에 밀려 조금 빠르고, 그 뒤엔 느릿느릿 오르내림
+    const tgtSpd = p.t < 1.2 ? .55 : .3 + .4 * (0.5 + 0.5 * Math.sin(p.t * .7 + p.ph));          // 처음엔 입김에 밀려 조금 빠르고, 그 뒤엔 느릿느릿 오르내림
     p.spd += (tgtSpd - p.spd) * d * 1.5;
     const dx = p.x - p.hx, dz = p.z - p.hz, far = Math.hypot(dx, dz); if (far > 7) { const back = Math.atan2(-dx, -dz); let diff = back - p.h; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); p.h += diff * d * 1.2; }   // 처음 자리에서 너무 멀어지면 슬슬 돌아온다
-    const yTgt = 1.0 + 1.3 * (0.5 + 0.5 * Math.sin(p.t * .31 + p.ph * 2)); p.pitch += ((yTgt - p.y) * .9 + Math.sin(p.t * 2.3 + p.ph) * .35 - p.pitch) * d * 2;   // 높이는 허리~머리 위를 오르내린다
+    const yTgt = 1.2 + 1.1 * (0.5 + 0.5 * Math.sin(p.t * .31 + p.ph * 2)); p.pitch += ((yTgt - p.y) * .9 + Math.sin(p.t * 2.3 + p.ph) * .35 - p.pitch) * d * 2;   // 높이는 허리~머리 위를 오르내린다
     p.x += (Math.sin(p.h) * p.spd + Math.sin(T.value * .7) * .15 * WIND.value) * d; p.z += (Math.cos(p.h) * p.spd + Math.cos(T.value * .5) * .1 * WIND.value) * d; p.y += p.pitch * d;
     if (p.y < .4) { p.y = .4; p.pitch = Math.abs(p.pitch); } if (SEA && p.x > SHORE + 2) { p.x = SHORE + 2; p.h = -p.h; } }
   // 빛: 진짜 반딧불처럼 2~3초마다 한 번 천천히 밝아졌다 꺼진다. 꺼진 동안에도 아주 희미하게는 보인다
-  let n = 0; for (const p of sparks) { const u = (p.t % p.blink) / p.blink; const flash = u < .45 ? Math.sin(u / .45 * Math.PI) : 0; let a = .08 + flash * .92; a *= Math.min(1, p.t / .5); if (p.dying) a *= Math.max(0, 1 - p.dt0 / 4);
-    spkPos[n * 3] = p.x; spkPos[n * 3 + 1] = p.y; spkPos[n * 3 + 2] = p.z; spkA[n] = a; spkS[n] = p.s * (.7 + .3 * flash); n++; }
+  let n = 0; for (const p of sparks) { const u = (p.t % p.blink) / p.blink; const flash = u < .6 ? Math.sin(u / .6 * Math.PI) : 0; let a = (p.t < 3 ? .6 : .22) + flash * .78; a = Math.min(1, a) * Math.min(1, p.t / .3);   // 처음 3초는 계속 환하게(눈에 띄게), 그 뒤 깜빡임 if (p.dying) a *= Math.max(0, 1 - p.dt0 / 4);
+    spkPos[n * 3] = p.x; spkPos[n * 3 + 1] = p.y; spkPos[n * 3 + 2] = p.z; spkA[n] = a; spkS[n] = p.s * (.75 + .25 * flash); n++; }
   spkGeo.setDrawRange(0, n); spkGeo.attributes.position.needsUpdate = spkGeo.attributes.aA.needsUpdate = spkGeo.attributes.aS.needsUpdate = true; }
 function mouthPos() { return hero.localToWorld(new THREE.Vector3(0, .93, .3)); }
 function puff(n, strength) { const m = mouthPos(); for (let k = 0; k < n && puffs.length < PUFF_N; k++) { const a = player.face + rnd(-.5, .5), sp = rnd(.3, 1.0) * strength; puffs.push({x: m.x + rnd(-.04, .04), y: m.y + rnd(-.03, .03), z: m.z + rnd(-.04, .04), vx: Math.sin(a) * sp, vy: rnd(.04, .2), vz: Math.cos(a) * sp, t: -k * .04, dur: rnd(1.0, 2.0) * (.8 + strength * .3), s: rnd(.06, .15)}); } }
@@ -589,7 +591,7 @@ const VOL = ls.get('hanseum_vol', {}); const BUS = {};   // key → {name, desc,
 const LAYERS = [{k: 'master', n: '전체', d: '모든 소리'},
   ...(RAIN ? [{k: 'rain', n: '빗소리', d: '고르게 내리는 비 (녹음)'}, {k: 'wind', n: '바람', d: '젖은 바람'}]
     : SEA ? [{k: 'waves', n: '파도', d: '물가에 잔잔히 밀려오는 파도 (녹음)'}, {k: 'wind', n: '바람', d: '소금기 섞인 바람'}]
-    : SNOW ? [{k: 'forest', n: '숲 소리', d: '침엽수 숲을 지나는 바람 (녹음)'}, {k: 'wind', n: '바람', d: '눈 내리는 밤의 낮은 바람'}, {k: 'steps', n: '발소리', d: '눈 밟는 소리'}]
+    : SNOW ? [{k: 'forest', n: '숲 소리', d: '침엽수 숲을 지나는 바람 (녹음)'}, {k: 'wind', n: '바람', d: '눈 내리는 밤의 낮은 바람'}, {k: 'steps', n: '발소리', d: '눈 밟는 소리 (녹음)'}]
     : [{k: 'crickets', n: '풀벌레', d: '밤 들판의 귀뚜라미 합창 (녹음)'}, {k: 'wind', n: '바람', d: '대숲을 지나는 바람'}]),
   {k: 'leaves', n: '댓잎', d: '돌풍 때 흔들리는 잎'}, {k: 'breath', n: '숨', d: '한숨 소리 (녹음)'}, {k: 'chime', n: '풍경', d: '한숨이 걸릴 때 울림'}];
 const vol = k => (VOL[k] ?? (k === 'master' ? 80 : 100)) / 100;
@@ -604,7 +606,8 @@ function initAudio() { if (AC) return; AC = new (window.AudioContext || window.w
   for (const L of LAYERS) if (L.k !== 'master') bus(L.k);
   themeAudio(); renderSound(); }
 // 녹음 파일 재생: <audio> 를 WebAudio 버스에 꽂아 슬라이더·마스터·리미터를 그대로 탄다(iOS 는 audio.volume 을 무시하므로 게인으로)
-let SIGH_BUF = null; function loadSigh() { fetch('audio/sigh.mp3').then(r => r.arrayBuffer()).then(b => AC.decodeAudioData(b)).then(b => { SIGH_BUF = b; }).catch(() => {}); }
+let SIGH_BUF = null, STEP_BUF = null; const loadBuf = (file, set) => fetch('audio/' + file).then(r => r.arrayBuffer()).then(b => AC.decodeAudioData(b)).then(set).catch(() => {});
+function loadSigh() { loadBuf('sigh.mp3', b => { SIGH_BUF = b; }); if (SNOW) loadBuf('snowstep.mp3', b => { STEP_BUF = b; }); }   // 눈 숲은 붐 녹음 발걸음(8.1초, 0.5초 간격 16걸음)도
 // from/len: 녹음 안의 구간(초), dur: 들려줄 시간(초). 구간을 dur 에 맞춰 0.8~1.6배로 늘이고 줄이되, 그래도 길면 dur 에서 사라진다
 function playSigh(from, len, dur, peak) { if (!SIGH_BUF || !AC) return false; const t = AC.currentTime, rate = Math.min(1.6, Math.max(.8, len / dur)); const src = AC.createBufferSource(); src.buffer = SIGH_BUF; src.playbackRate.value = rate;
   const g = AC.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + .06); g.gain.setValueAtTime(peak, t + dur * .72); g.gain.linearRampToValueAtTime(0, t + dur); src.connect(g); g.connect(bus('breath')); src.start(t, from, len); src.stop(t + dur + .05); return true; }
@@ -619,7 +622,8 @@ function themeAudio() {
   else if (SNOW) { windGain.gain.value = .035; windFilt.frequency.value = 220; ambient('forest.mp3', 'forest', .45); }
   else { ambient('insects.mp3', 'crickets', .5, () => { const chirp = () => { if (AC.state !== 'running') { setTimeout(chirp, 500); return; } const n = 3 + Math.floor(Math.random() * 4), f = 3800 + Math.random() * 800, t0 = AC.currentTime; for (let i = 0; i < n; i++) { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = AC.createGain(); const t = t0 + i * .07; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.006, t + .015); g.gain.linearRampToValueAtTime(0, t + .05); o.connect(g); g.connect(bus('crickets')); o.start(t); o.stop(t + .06); } setTimeout(chirp, 600 + Math.random() * 2200); }; chirp(); }); }
 }
-function snowStep() { if (!AC || !SNOW) return; const s = AC.createBufferSource(); s.buffer = noiseBuf(AC); const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; const g = AC.createGain(); const t = AC.currentTime; g.gain.setValueAtTime(.0, t); g.gain.linearRampToValueAtTime(.05, t + .03); g.gain.exponentialRampToValueAtTime(.0005, t + .22); s.connect(f); f.connect(g); g.connect(bus('steps')); s.start(); s.stop(t + .25); }
+function snowStep() { if (!AC || !SNOW) return; if (STEP_BUF) { const t = AC.currentTime, k = Math.floor(Math.random() * 16); const src = AC.createBufferSource(); src.buffer = STEP_BUF; src.playbackRate.value = rnd(.94, 1.06); const g = AC.createGain(); g.gain.setValueAtTime(.4, t); g.gain.setValueAtTime(.4, t + .3); g.gain.linearRampToValueAtTime(0, t + .42); src.connect(g); g.connect(bus('steps')); src.start(t, .06 + k * .5, .42); return; }   // 녹음 걸음 중 하나를 골라 작게
+  const s = AC.createBufferSource(); s.buffer = noiseBuf(AC); const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; const g = AC.createGain(); const t = AC.currentTime; g.gain.setValueAtTime(.0, t); g.gain.linearRampToValueAtTime(.05, t + .03); g.gain.exponentialRampToValueAtTime(.0005, t + .22); s.connect(f); f.connect(g); g.connect(bus('steps')); s.start(); s.stop(t + .25); }
 function rustle(strength = 1) { if (!AC) return; const s = AC.createBufferSource(); s.buffer = noiseBuf(AC); const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2600; f.Q.value = .6; const g = AC.createGain(); const t = AC.currentTime; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.09 * strength, t + .6); g.gain.exponentialRampToValueAtTime(.0005, t + 2.6); s.connect(f); f.connect(g); g.connect(bus('leaves')); s.start(); s.stop(t + 2.8); }
 function chime() { if (!AC) return; const t = AC.currentTime; [523.25, 659.25, 783.99].forEach((f, i) => { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = AC.createGain(); g.gain.setValueAtTime(0, t + i * .12); g.gain.linearRampToValueAtTime(.05, t + i * .12 + .02); g.gain.exponentialRampToValueAtTime(.0005, t + i * .12 + 2.2); o.connect(g); g.connect(bus('chime')); o.start(t + i * .12); o.stop(t + i * .12 + 2.3); }); }
 // 소리 패널: 숲 이름 + 레이어별 슬라이더(무슨 소리인지 설명 포함)
@@ -646,12 +650,12 @@ let holding = false, holdT = 0, pendingLen = 0;
 const breathBtn = $('breath'), fogfx = $('fogfx');
 let formTm = 0;
 function holdStart() { if (!started || holding || formTm || !$('form').hidden || !talkEl.hidden) return; holding = true; holdT = 0; sigh.phase = 'idle'; breathBtn.classList.add('hold'); cam.dTarget = 3.0; cam.pTarget = .32;
-  if (breathGain && !playSigh(.2, 1.1, 1.3, 1.1)) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.linearRampToValueAtTime(.13, t + 1.6); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(500, t); breathFilt.frequency.linearRampToValueAtTime(1300, t + 2.6); } }   // 들숨: 점점 가늘고 높아지는 숨소리
+  if (breathGain && !playSigh(.2, 1.1, 1.3, .35)) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.linearRampToValueAtTime(.13, t + 1.6); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(500, t); breathFilt.frequency.linearRampToValueAtTime(1300, t + 2.6); } }   // 들숨: 점점 가늘고 높아지는 숨소리
 function holdEnd() { if (!holding) return; holding = false; breathBtn.classList.remove('hold'); breathBtn.style.setProperty('--p', 0); fogfx.style.opacity = 0; cam.dTarget = 4.4; cam.pTarget = .5; exhale(holdT);
   if (holdT < .35) return; pendingLen = holdT; formTm = setTimeout(() => { formTm = 0; openForm(); }, 900 + Math.min(3.5, holdT) * 250); }   // 입김이 흘러가는 걸 본 뒤에 입력창
 // 날숨: 캐릭터가 어깨를 떨구고 입김을 내뿜는다. 길게 눌렀을수록 입김이 많고 소리도 길다.
 function exhale(len) { const L = Math.min(3.5, len); sigh.phase = 'out'; sigh.t = 0; sigh.dur = 1.3 + L * .4; puff(Math.round(14 + L * 14), .55 + L * .22); sparkFly(1, .55 + L * .22); breathBtn.textContent = '후우'; clearTimeout(exhale.tm); exhale.tm = setTimeout(() => breathBtn.textContent = '한숨', 1500);
-  if (breathGain && playSigh(2.0, 2.2, 1.0 + L * .5, 1.4)) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setTargetAtTime(0, t, .05); }   // 녹음 한숨: 길게 누를수록 느리고 길게
+  if (breathGain && playSigh(2.0, 2.2, 1.0 + L * .5, .5)) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setTargetAtTime(0, t, .05); }   // 녹음 한숨: 길게 누를수록 느리고 길게
   else if (breathGain) { const t = AC.currentTime, d = .8 + L * .35; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setValueAtTime(Math.max(.02, breathGain.gain.value), t); breathGain.gain.linearRampToValueAtTime(.22, t + .1); breathGain.gain.exponentialRampToValueAtTime(.001, t + d); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(750, t); breathFilt.frequency.exponentialRampToValueAtTime(300, t + d); } }
 breathBtn.addEventListener('pointerdown', e => { e.preventDefault(); holdStart(); }); breathBtn.addEventListener('pointerup', holdEnd); breathBtn.addEventListener('pointerleave', holdEnd); breathBtn.addEventListener('pointercancel', holdEnd);
 function openForm(keepText) { $('fsub').textContent = `숨 길이 ${pendingLen.toFixed(1)}초${pendingLen > 2.5 ? ' · 긴 한숨이네요' : ''}`; if (!keepText) { $('ftext').value = ''; $('fcnt').textContent = 0; $('fwarn').style.display = 'none'; } $('form').hidden = false; if (!IS_TOUCH) setTimeout(() => $('ftext').focus(), 50); }
@@ -819,7 +823,7 @@ for (const b of document.querySelectorAll('#servers button')) { b.onclick = () =
   b.addEventListener('pointerenter', () => titleBg(b.dataset.s)); b.addEventListener('focus', () => titleBg(b.dataset.s)); b.addEventListener('pointerleave', () => titleBg(SERVER)); b.addEventListener('blur', () => titleBg(SERVER)); }
 $('sw').onclick = () => { $('title').classList.remove('hide'); started = false; };
 addEventListener('hashchange', () => { const s = location.hash.slice(1); if (THEMES[s] && s !== SERVER) location.reload(); });
-window.__dbg = {AMB, player, cam, LEAVES, BAMBOO, PIX, setPix, releaseSigh, whisper, pickWhisper, wind, SERVER, sparkFly, sparks, playSigh, get sighBuf() { return SIGH_BUF; }, loadForest, OTHERS, lanternCard, camera, get people() { return peopleTotal; }, get night() { return NIGHT; }, get online() { return online; }, get started() { return started; }, get frames() { return frames; }, go(x, z) { started = true; player.x = x; player.z = z; $('title').classList.add('hide'); }, sigh(len = 2, mode = 'pub', text = '테스트 한숨') { pendingLen = len; releaseSigh(mode, text); }};
+window.__dbg = {AMB, player, cam, LEAVES, BAMBOO, PIX, setPix, releaseSigh, whisper, pickWhisper, wind, SERVER, sparkFly, sparks, playSigh, snowStep, get sighBuf() { return SIGH_BUF; }, get stepBuf() { return STEP_BUF; }, loadForest, OTHERS, lanternCard, camera, get people() { return peopleTotal; }, get night() { return NIGHT; }, get online() { return online; }, get started() { return started; }, get frames() { return frames; }, go(x, z) { started = true; player.x = x; player.z = z; $('title').classList.add('hide'); }, sigh(len = 2, mode = 'pub', text = '테스트 한숨') { pendingLen = len; releaseSigh(mode, text); }};
 frame();
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); sizePix(); });
 </script>
