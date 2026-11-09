@@ -114,7 +114,13 @@
   #stick{position:absolute;left:24px;bottom:36px;width:110px;height:110px;box-sizing:border-box;border:8px solid transparent;border-image:url(art/frame_btn.png) 16 repeat;image-rendering:pixelated;background:rgba(0,0,0,.25);display:none}
   #knob{position:absolute;left:27px;top:27px;width:40px;height:40px;background:rgba(233,228,214,.45);box-shadow:inset 0 0 0 4px rgba(7,11,15,.5)}
   .touch #stick{display:block}
-  .touch #hint{bottom:160px}
+  .touch #hint{display:none}   /* 폰에서는 조작 안내 글 없음(붐 11/9) */
+  /* 폰: 소리·캐릭터 버튼은 글자 없이 아이콘만, 작게. HUD 는 인원수와 숲 바꾸기만 */
+  .touch #snd,.touch #chr{width:38px;height:38px;padding:0;font-size:0;letter-spacing:0;background-position:center;background-size:18px 18px;border-width:7px;right:10px}
+  .touch #snd{bottom:14px} .touch #chr{bottom:58px}
+  .touch #hud{border-width:10px;padding:0 4px 2px;font-size:10px;letter-spacing:.1em;left:6px;top:6px}
+  .touch #hud b,.touch #hud #where{display:none}
+  .touch #hud small{margin-top:2px;display:inline-block} .touch #hud #sw{margin-left:8px}
   #form{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(7,11,15,.55);pointer-events:auto;backdrop-filter:blur(3px)}
   #form[hidden]{display:none}
   #form .card{width:min(86vw,440px);border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;border-width:16px;padding:6px 10px 6px;font-family:var(--pxl)}
@@ -404,7 +410,8 @@ let ffPlaced = 0;   // 워커 목록에서 이미 불을 켠 개수. 내 한숨�
 function syncLights(lights) { if (LEAVES.some(L => L.id.startsWith('sample'))) return; for (; ffPlaced < lights.length && ffN < FF_MAX; ffPlaced++) { const p = lights[ffPlaced]; addFirefly(+p[0] || 0, +p[1] || 0); } updateCount(); }
 const tonight = () => ffN;
 let peopleTotal = 0;   // 이 숲에 지금 있는 사람 수(나 포함), /pulse 가 알려 준다
-function updateCount() { $('count').textContent = `오늘 밤 한숨 ${tonight().toLocaleString()}` + (online ? (peopleTotal > 1 ? ` · 이 숲에 ${peopleTotal}명` : '') : ' · 오프라인'); }
+function updateCount() { if (IS_TOUCH) { $('count').textContent = online ? `이 숲에 ${Math.max(1, peopleTotal)}명` : '오프라인'; return; }   // 폰은 인원수만(붐 11/9)
+  $('count').textContent = `오늘 밤 한숨 ${tonight().toLocaleString()}` + (online ? (peopleTotal > 1 ? ` · 이 숲에 ${peopleTotal}명` : '') : ' · 오프라인'); }
 
 /* ───────────── 한숨 저장소: 워커(숲별 Durable Object) + 로컬(비공개·내 것 표시) ───────────── */
 const dayStart = () => { const d = new Date(); if (d.getHours() < 6) d.setDate(d.getDate() - 1); d.setHours(6, 0, 0, 0); return d.getTime(); };
