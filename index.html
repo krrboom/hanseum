@@ -431,7 +431,7 @@ const glowOf = n => .35 + Math.min(1, n / 8) * .65;
 function makeLeaf(s) {
   const mat = new THREE.MeshBasicMaterial({map: leafTagTex, transparent: true, side: THREE.DoubleSide}); const m = new THREE.Mesh(new THREE.PlaneGeometry(.38, .21), mat);
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({map: haloTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false})); m.add(halo);
-  const L = {id: s.id, text: s.text || '', pub: s.pub !== false, mine: !!s.mine, x: +s.x || 0, z: +s.z || 0, y: s.y ?? 1.5, mesh: m, halo, nado: s.nado || 0, phase: Math.random() * 6.3, buried: s.pub === false};
+  const L = {id: s.id, text: s.text || '', pub: s.pub !== false, mine: !!s.mine, t: +s.t || Date.now(), x: +s.x || 0, z: +s.z || 0, y: s.y ?? 1.5, mesh: m, halo, nado: s.nado || 0, phase: Math.random() * 6.3, buried: s.pub === false};
   m.position.set(L.x, L.y, L.z); m.rotation.y = s.ry ?? Math.random() * 6.3; if (L.buried) { m.rotation.set(-Math.PI / 2, 0, 0); m.scale.setScalar(.6); } setGlow(L); scene.add(m); LEAVES.push(L); return L;
 }
 function setGlow(L) { const g = glowOf(L.nado); L.mesh.material.color.setScalar(.55 + g * .45); L.halo.scale.setScalar(L.buried ? .9 : .7 + g * .9); L.halo.material.opacity = L.buried ? .6 : .35 + g * .65; }
@@ -443,12 +443,13 @@ async function loadForest() {
   try { const inForest = $('title').classList.contains('hide'); const d = inForest ? await api('/pulse', {id: MY_ID, x: +player.x.toFixed(2), z: +player.z.toFixed(2), face: +player.face.toFixed(2), c: CHAR}) : await api('/sighs'); online = true; lastSync = Date.now(); NIGHT = d.night || NIGHT; if (Array.isArray(d.people)) syncPeople(d.people, d.total);
     for (const s of d.sighs) if (!LEAVES.some(L => L.id === s.id)) { const perch = (s.x || s.z) ? s : {...s, ...(randomPerch() || {})}; makeLeaf({...perch, pub: true, mine: MINE.has(s.id)}); }
     for (const L of LEAVES) { const s = d.sighs.find(q => q.id === L.id); if (s && s.nado !== L.nado) { L.nado = s.nado; setGlow(L); } }
+    for (const L of [...LEAVES]) if (L.pub && !L.id.startsWith('sample') && !L.id.startsWith('me') && Date.now() - L.t > 60e3 && !d.sighs.some(q => q.id === L.id)) { if (nearL === L) nearL = null; removeLeaf(L); }   // 2시간 지나 서버에서 내려간 잎은 숲에서도 거둔다(붐 11/9)
     if (Array.isArray(d.lights)) syncLights(d.lights); else syncFireflies(d.n); if (d.line) setLine(d.line);
   } catch (e) { if (!online && !LEAVES.some(L => L.id.startsWith('sample'))) seedSamples(); else updateCount(); }
 }
 /* ───────────── 기척: 같은 숲에 있는 다른 사람들 ───────────── */
 const OTHERS = new Map();   // pid → {grp, legL, legR, c, tx, tz, tf, t, bob}
-function makeGhost(c) { const P = PRESETS[c] || PRESETS.kid; const g = new THREE.Group(); const mat = col => new THREE.MeshLambertMaterial({color: col});   // 같은 숲의 다른 사람도 투명하지 않게 제대로(붐 11/9)
+function makeGhost(c) { const P = PRESETS[c] || PRESETS.kid; const g = new THREE.Group(); g.scale.setScalar(CHAR_SCALE); const mat = col => new THREE.MeshLambertMaterial({color: col});   // 같은 숲의 다른 사람도 투명하지 않게 제대로(붐 11/9)
   const robe = mat(P.cloak), skin = mat(P.skin || 0xf0d2b4), hat = mat(P.hatC), scarf = mat(P.scarf), hair = mat(P.hair);
   const lL = part(.15, .2, .17, robe, -.1, .1, 0, g), lR = part(.15, .2, .17, robe, .1, .1, 0, g); part(.46, .5, .34, robe, 0, .45, 0, g); part(.5, .12, .38, scarf, 0, .72, 0, g);
   const hd = part(.56, .52, .5, skin, 0, 1.03, 0, g); part(.58, .12, .52, hair, 0, .22, 0, hd);
@@ -474,7 +475,8 @@ loadForest(); setInterval(loadForest, 12000);
 
 /* ───────────── 캐릭터 (등불 든 사람) ───────────── */
 /* 2등신 박스 꼬마: 큰 머리에 픽셀 얼굴(눈·볼·입, 눈 깜박임), 프리셋마다 모자·목도리·망토가 다름 */
-const hero = new THREE.Group(); scene.add(hero);
+const CHAR_SCALE = .65;   // 캐릭터 전체 크기 35% 축소(붐 11/9). 내 캐릭터·다른 사람 모두
+const hero = new THREE.Group(); hero.scale.setScalar(CHAR_SCALE); scene.add(hero);
 const PRESETS = {
   kid:    {name: '콩이',   cloak: 0x2a2f44, scarf: 0x9a4a3a, hat: 'beanie',   hatC: 0xe8dfc6, hair: 0x2a211c},
   satgat: {name: '도토리',     cloak: 0x3a4252, scarf: 0x6a7080, hat: 'satgat',   hatC: 0xb8924e, hair: 0x2a211c, cape: 0xc9a85c},
@@ -568,7 +570,7 @@ function updateSparks(dt) { const d = Math.min(dt, .05); for (let i = sparks.len
     const dx = p.x - p.hx, dz = p.z - p.hz, far = Math.hypot(dx, dz); if (far > 7) { const back = Math.atan2(-dx, -dz); let diff = back - p.h; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); p.h += diff * d * 1.2; }   // 처음 자리에서 너무 멀어지면 슬슬 돌아온다
     const yTgt = 1.2 + 1.1 * (0.5 + 0.5 * Math.sin(p.t * .31 + p.ph * 2)); p.pitch += ((yTgt - p.y) * .9 + Math.sin(p.t * 2.3 + p.ph) * .35 - p.pitch) * d * 2;   // 높이는 허리~머리 위를 오르내린다
     p.x += (Math.sin(p.h) * p.spd + Math.sin(T.value * .7) * .15 * WIND.value) * d; p.z += (Math.cos(p.h) * p.spd + Math.cos(T.value * .5) * .1 * WIND.value) * d; p.y += p.pitch * d;
-    if (p.y < .4) { p.y = .4; p.pitch = Math.abs(p.pitch); } if (SEA && p.x > SHORE + 2) { p.x = SHORE + 2; p.h = -p.h; } }
+    if (p.y < .4) { p.y = .4; p.pitch = Math.abs(p.pitch); } }   // 바다 위·부두에서도 그대로 난다(붐 11/9: 숲 밖에서도 나오게)
   // 빛: 진짜 반딧불처럼 2~3초마다 한 번 천천히 밝아졌다 꺼진다. 꺼진 동안에도 아주 희미하게는 보인다
   let n = 0; for (const p of sparks) { const u = (p.t % p.blink) / p.blink; const flash = u < .6 ? Math.sin(u / .6 * Math.PI) : 0; let a = (p.t < 3 ? .6 : .22) + flash * .78; a = Math.min(1, a) * Math.min(1, p.t / .3);   // 처음 3초는 계속 환하게(눈에 띄게), 그 뒤 깜빡임 if (p.dying) a *= Math.max(0, 1 - p.dt0 / 4);
     spkPos[n * 3] = p.x; spkPos[n * 3 + 1] = p.y; spkPos[n * 3 + 2] = p.z; spkA[n] = a; spkS[n] = p.s * (.75 + .25 * flash); n++; }
@@ -812,7 +814,7 @@ function frame() {
   updateSprite(moving, dt);
   cam.dist += (cam.dTarget - cam.dist) * Math.min(1, dt * 3); cam.pitch += (cam.pTarget - cam.pitch) * Math.min(1, dt * 3);
   const dH = cam.dist * Math.cos(cam.pitch), dV = cam.dist * Math.sin(cam.pitch);
-  camera.position.set(player.x + Math.sin(cam.yaw) * dH, gy + 1.1 + dV, player.z + Math.cos(cam.yaw) * dH); camera.lookAt(player.x, gy + 1.1, player.z);
+  camera.position.set(player.x + Math.sin(cam.yaw) * dH, gy + .8 + dV, player.z + Math.cos(cam.yaw) * dH); camera.lookAt(player.x, gy + .8, player.z);   // 작아진 캐릭터 머리 높이에 맞춤
   updateWind(dt); updateAnims(dt); updateNear(); signEl.classList.toggle('on', started && Math.hypot(player.x - 2.3, player.z - 11.5) < 3.4); layoutCards(); const nearTower = started && talkEl.hidden && Math.hypot(player.x - TOWER.x, player.z - TOWER.z) < 2.6; if (nearTower !== cairnOn) { cairnOn = nearTower; cairnEl.classList.toggle('on', nearTower); if (nearTower) $('cairnbtn').textContent = talk.msgs.length ? '이야기 이어가기' : '돌탑에 말 걸기'; }
   for (const L of LEAVES) if (!L.buried) { L.mesh.rotation.z = Math.sin(T.value * 2.2 + L.phase) * .1 * WIND.value; L.halo.material.opacity = (.35 + glowOf(L.nado) * .65) * (.75 + .25 * Math.sin(T.value * 1.3 + L.phase)); }
   updateOthers(dt); renderFrame(); requestAnimationFrame(frame);
