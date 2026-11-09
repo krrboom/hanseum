@@ -106,7 +106,7 @@
   #tin button{padding:0 14px;font-size:13px;letter-spacing:.2em}
   #tin button:disabled{opacity:.4;cursor:default}
   #talkbtn{position:absolute;left:50%;bottom:160px;transform:translateX(-50%);pointer-events:auto;font-size:12px;letter-spacing:.2em;padding:3px 12px 3px 30px;background-image:url(art/ic_talk.png);background-repeat:no-repeat;background-position:8px center;background-size:16px 16px}
-  body.talking #near,body.talking #breath,body.talking #sign,body.talking #talkbtn,body.talking #toast,body.talking #hint,body.talking #stick{display:none}
+  body.talking #near,body.talking #breath,body.talking #sign,body.talking #talkbtn,body.talking #toast,body.talking #hint,body.talking #stick,body.talking #snd,body.talking #chr,body.talking #sndp,body.talking #chrp,body.talking #save{display:none}   /* 대화창이 뜨면 소리·캐릭터 버튼과 패널도 숨긴다(폰에서 대화창을 가렸음, 붐 11/9) */
   #ui:has(#sndp:not([hidden])) #stick,#ui:has(#chrp:not([hidden])) #stick,#ui:has(#sndp:not([hidden])) #hint,#ui:has(#chrp:not([hidden])) #hint{display:none}   /* 패널이 열리면 스틱·안내는 잠시 숨긴다(모바일 겹침) */
   .touch #sndp,.touch #chrp{bottom:64px;max-height:62vh;overflow-y:auto;width:min(86vw,300px)}
   .touch #ui:has(#sndp:not([hidden])) #breath,.touch #ui:has(#sndp:not([hidden])) #chr,.touch #ui:has(#chrp:not([hidden])) #breath{display:none}
