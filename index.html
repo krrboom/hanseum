@@ -384,7 +384,7 @@ if (SNOW) {
 function updateLandmarks(dt) { for (const r of ripples) { if (r.foam) { r.m.position.x = SEA_X - .3 - (ripples.indexOf(r)) * .5 + Math.sin(T.value * .6 + ripples.indexOf(r)) * .6; continue; } if (r.refl) { r.m.material.opacity = .4 + Math.sin(T.value * 2.3) * .08 + Math.sin(T.value * 5.1) * .05; continue; } r.t += dt; if (r.t > 2.2) { r.t = 0; r.m.position.set(POND.x + (Math.random() - .5) * POND.rx * 1.6, .03, POND.z + (Math.random() - .5) * POND.rz * 1.6); } const u = r.t / 2.2; r.m.scale.setScalar(.1 + u * 1.3); r.m.material.opacity = .35 * (1 - u); } }
 
 /* ───────────── 밤의 한 줄 (입구 나무판) ───────────── */
-let NIGHT_LINE = '오늘 밤은 다들 조금 길게 쉬었어요.'; let signMat;
+let NIGHT_LINE = '오늘 밤은 한숨 쉬고 가도 돼요.'; let signMat;   // 문구는 붐 11/9. 그날 한숨이 12개 넘으면 워커가 만든 한 줄로 바뀐다
 function wrapText(g, str, maxW) { const out = []; let cur = ''; for (const wd of str.split(' ')) { const t = cur ? cur + ' ' + wd : wd; if (g.measureText(t).width > maxW && cur) { out.push(cur); cur = wd; } else cur = t; } if (cur) out.push(cur); return out; }
 // 판자 글씨는 픽셀 렌더를 거쳐도 읽히게: 1024×512 텍스처, 굵은 큰 글씨, 두 줄까지. 가까이 가면 화면 위에도 같은 줄이 뜬다(#sign).
 function drawBoard(line) { return tex(1024, 512, (g, w, h) => { g.fillStyle = '#3a2e22'; g.fillRect(0, 0, w, h); for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * .12 + .04})`; g.fillRect(0, Math.random() * h, w, Math.random() * 3 + 1); } g.strokeStyle = 'rgba(233,228,214,.35)'; g.lineWidth = 6; g.strokeRect(22, 22, w - 44, h - 44);
@@ -591,7 +591,7 @@ const LAYERS = [{k: 'master', n: '전체', d: '모든 소리'},
     : SEA ? [{k: 'waves', n: '파도', d: '물가에 잔잔히 밀려오는 파도 (녹음)'}, {k: 'wind', n: '바람', d: '소금기 섞인 바람'}]
     : SNOW ? [{k: 'forest', n: '숲 소리', d: '침엽수 숲을 지나는 바람 (녹음)'}, {k: 'wind', n: '바람', d: '눈 내리는 밤의 낮은 바람'}, {k: 'steps', n: '발소리', d: '눈 밟는 소리'}]
     : [{k: 'crickets', n: '풀벌레', d: '밤 들판의 귀뚜라미 합창 (녹음)'}, {k: 'wind', n: '바람', d: '대숲을 지나는 바람'}]),
-  {k: 'leaves', n: '댓잎', d: '돌풍 때 흔들리는 잎'}, {k: 'breath', n: '숨', d: '꾹 누를 때 숨소리'}, {k: 'chime', n: '풍경', d: '한숨이 걸릴 때 울림'}];
+  {k: 'leaves', n: '댓잎', d: '돌풍 때 흔들리는 잎'}, {k: 'breath', n: '숨', d: '한숨 소리 (녹음)'}, {k: 'chime', n: '풍경', d: '한숨이 걸릴 때 울림'}];
 const vol = k => (VOL[k] ?? (k === 'master' ? 80 : 100)) / 100;
 // 녹음 출처 (Wikimedia Commons). 11/8 교체: 전엔 옛 앱 파일(풀벌레는 93%가 무음, 숲은 새소리 드문드문)이라 백색소음과 거리가 멀었음. 고른 기준: 고르게 이어지는 소리.
 const CREDIT = RAIN ? '녹음 옛 한숨 앱의 빗소리(github krrboom/hanseum)' : SEA ? '녹음 Atmo – Ufer Wellen, Burkhard Mücke, CC BY-SA 4.0' : SNOW ? '녹음 Wind in sparren in het Vijlenerbos, luc de bruijn, CC BY 3.0' : '녹음 Crickets choir, Serg Childed, CC BY-SA 4.0';
@@ -600,10 +600,14 @@ function setVol(k, v) { VOL[k] = v; ls.set('hanseum_vol', VOL); if (!AC) return;
 function noiseBuf(ac) { const b = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
 function initAudio() { if (AC) return; AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = vol('master'); const lim = AC.createDynamicsCompressor(); lim.threshold.value = -12; lim.ratio.value = 12; master.connect(lim); lim.connect(AC.destination);
   const src = AC.createBufferSource(); src.buffer = noiseBuf(AC); src.loop = true; windFilt = AC.createBiquadFilter(); windFilt.type = 'lowpass'; windFilt.frequency.value = 380; windFilt.Q.value = .4; windGain = AC.createGain(); windGain.gain.value = .07; src.connect(windFilt); windFilt.connect(windGain); windGain.connect(bus('wind')); src.start();
-  const src2 = AC.createBufferSource(); src2.buffer = noiseBuf(AC); src2.loop = true; breathFilt = AC.createBiquadFilter(); breathFilt.type = 'bandpass'; breathFilt.frequency.value = 900; breathFilt.Q.value = .8; breathGain = AC.createGain(); breathGain.gain.value = 0; src2.connect(breathFilt); breathFilt.connect(breathGain); breathGain.connect(bus('breath')); src2.start();
+  const src2 = AC.createBufferSource(); src2.buffer = noiseBuf(AC); src2.loop = true; breathFilt = AC.createBiquadFilter(); breathFilt.type = 'bandpass'; breathFilt.frequency.value = 900; breathFilt.Q.value = .8; breathGain = AC.createGain(); breathGain.gain.value = 0; src2.connect(breathFilt); breathFilt.connect(breathGain); breathGain.connect(bus('breath')); src2.start(); loadSigh();
   for (const L of LAYERS) if (L.k !== 'master') bus(L.k);
   themeAudio(); renderSound(); }
 // 녹음 파일 재생: <audio> 를 WebAudio 버스에 꽂아 슬라이더·마스터·리미터를 그대로 탄다(iOS 는 audio.volume 을 무시하므로 게인으로)
+let SIGH_BUF = null; function loadSigh() { fetch('audio/sigh.mp3').then(r => r.arrayBuffer()).then(b => AC.decodeAudioData(b)).then(b => { SIGH_BUF = b; }).catch(() => {}); }
+// from/len: 녹음 안의 구간(초), dur: 들려줄 시간(초). 구간을 dur 에 맞춰 0.8~1.6배로 늘이고 줄이되, 그래도 길면 dur 에서 사라진다
+function playSigh(from, len, dur, peak) { if (!SIGH_BUF || !AC) return false; const t = AC.currentTime, rate = Math.min(1.6, Math.max(.8, len / dur)); const src = AC.createBufferSource(); src.buffer = SIGH_BUF; src.playbackRate.value = rate;
+  const g = AC.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + .06); g.gain.setValueAtTime(peak, t + dur * .72); g.gain.linearRampToValueAtTime(0, t + dur); src.connect(g); g.connect(bus('breath')); src.start(t, from, len); src.stop(t + dur + .05); return true; }
 const AMB = []; function ambient(file, k, gain, fallback) { const el = new Audio('audio/' + file); AMB.push(el); el.loop = true; el.preload = 'auto'; const src = AC.createMediaElementSource(el); const g = AC.createGain(); g.gain.value = gain; src.connect(g); g.connect(bus(k));
   let failed = false; el.onerror = () => { if (failed) return; failed = true; try { src.disconnect(); } catch (e) {} if (fallback) fallback(); };
   const go = () => el.play().catch(() => { addEventListener('pointerdown', go, {once: true}); addEventListener('keydown', go, {once: true}); }); go(); return el; }
@@ -642,12 +646,13 @@ let holding = false, holdT = 0, pendingLen = 0;
 const breathBtn = $('breath'), fogfx = $('fogfx');
 let formTm = 0;
 function holdStart() { if (!started || holding || formTm || !$('form').hidden || !talkEl.hidden) return; holding = true; holdT = 0; sigh.phase = 'idle'; breathBtn.classList.add('hold'); cam.dTarget = 3.0; cam.pTarget = .32;
-  if (breathGain) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.linearRampToValueAtTime(.13, t + 1.6); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(500, t); breathFilt.frequency.linearRampToValueAtTime(1300, t + 2.6); } }   // 들숨: 점점 가늘고 높아지는 숨소리
+  if (breathGain && !playSigh(.2, 1.1, 1.3, 1.1)) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.linearRampToValueAtTime(.13, t + 1.6); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(500, t); breathFilt.frequency.linearRampToValueAtTime(1300, t + 2.6); } }   // 들숨: 점점 가늘고 높아지는 숨소리
 function holdEnd() { if (!holding) return; holding = false; breathBtn.classList.remove('hold'); breathBtn.style.setProperty('--p', 0); fogfx.style.opacity = 0; cam.dTarget = 4.4; cam.pTarget = .5; exhale(holdT);
   if (holdT < .35) return; pendingLen = holdT; formTm = setTimeout(() => { formTm = 0; openForm(); }, 900 + Math.min(3.5, holdT) * 250); }   // 입김이 흘러가는 걸 본 뒤에 입력창
 // 날숨: 캐릭터가 어깨를 떨구고 입김을 내뿜는다. 길게 눌렀을수록 입김이 많고 소리도 길다.
 function exhale(len) { const L = Math.min(3.5, len); sigh.phase = 'out'; sigh.t = 0; sigh.dur = 1.3 + L * .4; puff(Math.round(14 + L * 14), .55 + L * .22); sparkFly(1, .55 + L * .22); breathBtn.textContent = '후우'; clearTimeout(exhale.tm); exhale.tm = setTimeout(() => breathBtn.textContent = '한숨', 1500);
-  if (breathGain) { const t = AC.currentTime, d = .8 + L * .35; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setValueAtTime(Math.max(.02, breathGain.gain.value), t); breathGain.gain.linearRampToValueAtTime(.22, t + .1); breathGain.gain.exponentialRampToValueAtTime(.001, t + d); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(750, t); breathFilt.frequency.exponentialRampToValueAtTime(300, t + d); } }
+  if (breathGain && playSigh(2.0, 2.2, 1.0 + L * .5, 1.4)) { const t = AC.currentTime; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setTargetAtTime(0, t, .05); }   // 녹음 한숨: 길게 누를수록 느리고 길게
+  else if (breathGain) { const t = AC.currentTime, d = .8 + L * .35; breathGain.gain.cancelScheduledValues(t); breathGain.gain.setValueAtTime(Math.max(.02, breathGain.gain.value), t); breathGain.gain.linearRampToValueAtTime(.22, t + .1); breathGain.gain.exponentialRampToValueAtTime(.001, t + d); breathFilt.frequency.cancelScheduledValues(t); breathFilt.frequency.setValueAtTime(750, t); breathFilt.frequency.exponentialRampToValueAtTime(300, t + d); } }
 breathBtn.addEventListener('pointerdown', e => { e.preventDefault(); holdStart(); }); breathBtn.addEventListener('pointerup', holdEnd); breathBtn.addEventListener('pointerleave', holdEnd); breathBtn.addEventListener('pointercancel', holdEnd);
 function openForm(keepText) { $('fsub').textContent = `숨 길이 ${pendingLen.toFixed(1)}초${pendingLen > 2.5 ? ' · 긴 한숨이네요' : ''}`; if (!keepText) { $('ftext').value = ''; $('fcnt').textContent = 0; $('fwarn').style.display = 'none'; } $('form').hidden = false; if (!IS_TOUCH) setTimeout(() => $('ftext').focus(), 50); }
 // 쓰는 동안 바로 거른다: 욕설·음담패설·비하가 섞이면 안내를 띄우고 "바람에 실어 보내기"를 잠근다(땅에 묻기·숨만 두기는 그대로). 진짜 판정은 워커가 같은 필터 + AI 로 한 번 더 한다.
@@ -814,7 +819,7 @@ for (const b of document.querySelectorAll('#servers button')) { b.onclick = () =
   b.addEventListener('pointerenter', () => titleBg(b.dataset.s)); b.addEventListener('focus', () => titleBg(b.dataset.s)); b.addEventListener('pointerleave', () => titleBg(SERVER)); b.addEventListener('blur', () => titleBg(SERVER)); }
 $('sw').onclick = () => { $('title').classList.remove('hide'); started = false; };
 addEventListener('hashchange', () => { const s = location.hash.slice(1); if (THEMES[s] && s !== SERVER) location.reload(); });
-window.__dbg = {AMB, player, cam, LEAVES, BAMBOO, PIX, setPix, releaseSigh, whisper, pickWhisper, wind, SERVER, sparkFly, sparks, loadForest, OTHERS, lanternCard, camera, get people() { return peopleTotal; }, get night() { return NIGHT; }, get online() { return online; }, get started() { return started; }, get frames() { return frames; }, go(x, z) { started = true; player.x = x; player.z = z; $('title').classList.add('hide'); }, sigh(len = 2, mode = 'pub', text = '테스트 한숨') { pendingLen = len; releaseSigh(mode, text); }};
+window.__dbg = {AMB, player, cam, LEAVES, BAMBOO, PIX, setPix, releaseSigh, whisper, pickWhisper, wind, SERVER, sparkFly, sparks, playSigh, get sighBuf() { return SIGH_BUF; }, loadForest, OTHERS, lanternCard, camera, get people() { return peopleTotal; }, get night() { return NIGHT; }, get online() { return online; }, get started() { return started; }, get frames() { return frames; }, go(x, z) { started = true; player.x = x; player.z = z; $('title').classList.add('hide'); }, sigh(len = 2, mode = 'pub', text = '테스트 한숨') { pendingLen = len; releaseSigh(mode, text); }};
 frame();
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); sizePix(); });
 </script>
