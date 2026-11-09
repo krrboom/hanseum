@@ -13,9 +13,9 @@
   h1,h4,#title .q,#toast .n,#whisper,#sign .l,#hud b{font-family:"Hahmlet","Gowun Batang","Noto Serif KR",serif}
   canvas{display:block}
   button{font-family:inherit}
-  #snd,#chr,#near button,#toast button,#form .opts button,#tin button,#talkbtn,#cairn button,#sndp .mute,#talk h4 button{background:rgba(7,11,15,.62);border:8px solid transparent;border-image:url(art/frame_btn.png) 16 repeat;image-rendering:pixelated;color:var(--paper);font-family:var(--px);font-size:12px;letter-spacing:.1em;padding:3px 10px;cursor:pointer;transition:filter .15s,transform .05s;text-shadow:1px 1px 0 #000}
-  #snd:hover,#chr:hover,#near button:not(:disabled):hover,#toast button:hover,#form .opts button:hover,#tin button:not(:disabled):hover,#talkbtn:hover,#cairn button:hover,#sndp .mute:hover,#talk h4 button:hover{border-image:url(art/frame_hi.png) 16 repeat;filter:brightness(1.1)}
-  #snd:active,#chr:active,#near button:not(:disabled):active,#toast button:active,#form .opts button:active,#tin button:active,#talkbtn:active,#cairn button:active,#sndp .mute:active{transform:translateY(1px)}
+  #snd,#chr,#near button,#toast button,#form .opts button,#tin button,#talkbtn,#cairn button,#sndp .mute,.pclose,#talk h4 button{background:rgba(7,11,15,.62);border:8px solid transparent;border-image:url(art/frame_btn.png) 16 repeat;image-rendering:pixelated;color:var(--paper);font-family:var(--px);font-size:12px;letter-spacing:.1em;padding:3px 10px;cursor:pointer;transition:filter .15s,transform .05s;text-shadow:1px 1px 0 #000}
+  #snd:hover,#chr:hover,#near button:not(:disabled):hover,#toast button:hover,#form .opts button:hover,#tin button:not(:disabled):hover,#talkbtn:hover,#cairn button:hover,#sndp .mute:hover,.pclose:hover,#talk h4 button:hover{border-image:url(art/frame_hi.png) 16 repeat;filter:brightness(1.1)}
+  #snd:active,#chr:active,#near button:not(:disabled):active,#toast button:active,#form .opts button:active,#tin button:active,#talkbtn:active,#cairn button:active,#sndp .mute:active,.pclose:active{transform:translateY(1px)}
   button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   ::selection{background:var(--moss);color:var(--bg)}
@@ -70,6 +70,7 @@
   #sndp{position:absolute;right:12px;bottom:56px;width:min(78vw,260px);pointer-events:auto;border:14px solid transparent;border-image:url(art/frame.png) 16 fill repeat;image-rendering:pixelated;padding:0 6px 4px;font-family:var(--px);font-size:12px}
   #sndp[hidden]{display:none}
   #sndp h4{margin:0 0 8px;font-weight:400;font-family:var(--px);font-size:12px;letter-spacing:.3em;color:var(--moss)}
+  #sndp h4,#chrp h4{display:flex;justify-content:space-between;align-items:center;gap:8px} .pclose{color:var(--moss);font-size:11px;letter-spacing:.15em;padding:2px 8px;flex:none} .pclose:focus-visible{outline:2px solid var(--amber,#ffb26b);outline-offset:2px}
   #sndp .row{display:flex;align-items:center;gap:10px;margin:7px 0}
   #sndp .row label{flex:0 0 72px;letter-spacing:.08em;color:var(--paper);white-space:nowrap}
   #sndp .row label small{display:block;font-size:11px;color:var(--dim);letter-spacing:.05em}
@@ -191,7 +192,7 @@
   <button id="snd">소리</button>
   <button id="chr" hidden>캐릭터</button>
   <div id="chrp" hidden></div>
-  <div id="sndp" hidden><h4 id="sndt">소리</h4><div id="sndrows"></div><button class="mute" id="mute">전체 끄기</button></div>
+  <div id="sndp" hidden><h4><span id="sndt">소리</span><button class="pclose" type="button">닫기</button></h4><div id="sndrows"></div><button class="mute" id="mute">전체 끄기</button></div>
   <div id="hint"></div>
   <div id="stick"><div id="knob"></div></div>
   <div id="form" hidden>
@@ -447,7 +448,7 @@ async function loadForest() {
 }
 /* ───────────── 기척: 같은 숲에 있는 다른 사람들 ───────────── */
 const OTHERS = new Map();   // pid → {grp, legL, legR, c, tx, tz, tf, t, bob}
-function makeGhost(c) { const P = PRESETS[c] || PRESETS.kid; const g = new THREE.Group(); const mat = col => new THREE.MeshLambertMaterial({color: col, transparent: true, opacity: .62});
+function makeGhost(c) { const P = PRESETS[c] || PRESETS.kid; const g = new THREE.Group(); const mat = col => new THREE.MeshLambertMaterial({color: col});   // 같은 숲의 다른 사람도 투명하지 않게 제대로(붐 11/9)
   const robe = mat(P.cloak), skin = mat(P.skin || 0xf0d2b4), hat = mat(P.hatC), scarf = mat(P.scarf), hair = mat(P.hair);
   const lL = part(.15, .2, .17, robe, -.1, .1, 0, g), lR = part(.15, .2, .17, robe, .1, .1, 0, g); part(.46, .5, .34, robe, 0, .45, 0, g); part(.5, .12, .38, scarf, 0, .72, 0, g);
   const hd = part(.56, .52, .5, skin, 0, 1.03, 0, g); part(.58, .12, .52, hair, 0, .22, 0, hd);
@@ -475,11 +476,11 @@ loadForest(); setInterval(loadForest, 12000);
 /* 2등신 박스 꼬마: 큰 머리에 픽셀 얼굴(눈·볼·입, 눈 깜박임), 프리셋마다 모자·목도리·망토가 다름 */
 const hero = new THREE.Group(); scene.add(hero);
 const PRESETS = {
-  kid:    {name: '털모자',   cloak: 0x2a2f44, scarf: 0x9a4a3a, hat: 'beanie',   hatC: 0xe8dfc6, hair: 0x2a211c},
-  satgat: {name: '삿갓',     cloak: 0x3a4252, scarf: 0x6a7080, hat: 'satgat',   hatC: 0xb8924e, hair: 0x2a211c, cape: 0xc9a85c},
-  girl:   {name: '단발',     cloak: 0x2e4a38, scarf: 0xe4d8bc, hat: 'beanie',   hatC: 0xc9962e, hair: 0x3a2a24, bob: true},
-  hood:   {name: '후드',     cloak: 0x3a3a42, scarf: 0x5a7090, hat: 'hood',     hatC: 0x3a3a42, hair: 0x2a211c, glasses: true, bag: 0x6a4a30},
-  braid:  {name: '땋은머리', cloak: 0x5a3550, scarf: 0xd08890, hat: 'earmuffs', hatC: 0xf0e8dc, hair: 0x2a1e2a, braid: true},
+  kid:    {name: '콩이',   cloak: 0x2a2f44, scarf: 0x9a4a3a, hat: 'beanie',   hatC: 0xe8dfc6, hair: 0x2a211c},
+  satgat: {name: '도토리',     cloak: 0x3a4252, scarf: 0x6a7080, hat: 'satgat',   hatC: 0xb8924e, hair: 0x2a211c, cape: 0xc9a85c},
+  girl:   {name: '달래',     cloak: 0x2e4a38, scarf: 0xe4d8bc, hat: 'beanie',   hatC: 0xc9962e, hair: 0x3a2a24, bob: true},
+  hood:   {name: '밤톨',     cloak: 0x3a3a42, scarf: 0x5a7090, hat: 'hood',     hatC: 0x3a3a42, hair: 0x2a211c, glasses: true, bag: 0x6a4a30},
+  braid:  {name: '솜이', cloak: 0x5a3550, scarf: 0xd08890, hat: 'earmuffs', hatC: 0xf0e8dc, hair: 0x2a1e2a, braid: true},
   fox:    {name: '여우',     cloak: 0xe4d8bc, scarf: 0x2a2f44, hat: 'ears',     hatC: 0xd8783a, hair: 0xd8783a, fox: true, skin: 0xd8783a},
 };
 const part = (w, h, d, m, x, y, z, parent = hero) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); parent.add(o); return o; };
@@ -528,7 +529,7 @@ function sprTexture(name, fr) { const k = name + '/' + fr; if (!sprTex[k]) { con
 function setSprFrame(name, fr) { const f = SPR[name][fr]; const k = name + '/' + fr; if (k !== sprFrame) { sprFrame = k; sprMat.map = sprTexture(name, fr); sprMat.needsUpdate = true; const h = SPR_H * f.h / SPR[name].front.h, w = h * f.w / f.h; sprMesh.scale.set(w, h, 1); sprMesh.position.y = h / 2; } }
 function setChar(c) { CHAR = c; ls.set('hanseum_char', c); const px = c.startsWith('px_'); if (!px) buildBox(PRESETS[c]); hero.visible = !px; sprHero.visible = px; $('chr').textContent = '캐릭터: ' + CHAR_NAME(c); for (const el of $('chrp').querySelectorAll('.pick')) el.classList.toggle('on', el.dataset.c === c); }
 function icon(c) { if (c.startsWith('px_')) return `<img src="${SPR[c.slice(3)].front.url}" alt="">`; const P = PRESETS[c]; return `<i style="background:linear-gradient(${hex(P.hatC)} 0 28%,${hex(P.skin || 0xf0d2b4)} 28% 56%,${hex(P.scarf)} 56% 66%,${hex(P.cloak)} 66%)"></i>`; }
-function renderPicker() { $('chrp').innerHTML = '<h4>누구로 걸을까요</h4><div class="grid">' + CHARS.map(c => `<button class="pick" data-c="${c}">${icon(c)}<span>${CHAR_NAME(c)}</span></button>`).join('') + '</div>';
+function renderPicker() { $('chrp').innerHTML = '<h4><span>누구로 걸을까요</span><button class="pclose" type="button">닫기</button></h4><div class="grid">' + CHARS.map(c => `<button class="pick" data-c="${c}">${icon(c)}<span>${CHAR_NAME(c)}</span></button>`).join('') + '</div>';
   for (const el of $('chrp').querySelectorAll('.pick')) el.onclick = () => { setChar(el.dataset.c); $('chrp').hidden = true; }; }
 renderPicker();
 function updateSprite(moving, dt) { if (!CHAR.startsWith('px_')) return; const name = CHAR.slice(3); sprHero.position.set(player.x, groundY(player.x, player.z), player.z); const yaw = Math.atan2(camera.position.x - player.x, camera.position.z - player.z); sprHero.rotation.y = yaw;
@@ -632,7 +633,10 @@ function renderSound() { $('sndt').textContent = TH.name + '의 소리'; $('sndr
 function updateMute() { const off = vol('master') === 0; $('mute').textContent = off ? '전체 켜기' : '전체 끄기'; $('snd').textContent = off ? '소리 꺼짐' : '소리'; }
 let lastMaster = 80;
 $('mute').onclick = () => { const cur = Math.round(vol('master') * 100); if (cur > 0) { lastMaster = cur; setVol('master', 0); } else setVol('master', lastMaster || 80); renderSound(); };
-$('snd').onclick = () => { if (!AC) { initAudio(); if (AC.state === 'suspended') AC.resume(); } $('sndp').hidden = !$('sndp').hidden; if (!$('sndp').hidden) renderSound(); };
+$('snd').onclick = () => { if (!AC) { initAudio(); if (AC.state === 'suspended') AC.resume(); } $('sndp').hidden = !$('sndp').hidden; $('chrp').hidden = true; if (!$('sndp').hidden) renderSound(); };
+// 패널 닫기: 머리줄의 닫기 버튼, 또는 패널·여는 버튼 바깥을 탭/클릭(붐 11/9)
+addEventListener('click', e => { if (e.target.closest('.pclose')) { e.target.closest('#sndp,#chrp').hidden = true; return; } if (e.target.closest('#sndp,#chrp,#snd,#chr')) return; $('sndp').hidden = true; $('chrp').hidden = true; }, true);
+addEventListener('touchstart', e => { if (e.target.closest('#sndp,#chrp,#snd,#chr')) return; $('sndp').hidden = true; $('chrp').hidden = true; }, {capture: true, passive: true});
 renderSound();
 
 /* ───────────── 바람과 속삭임 ───────────── */
